@@ -1,9 +1,10 @@
 # Usage: python3 tools/run-bench.py [N]  → docs/bench.json (real MediaPipe on rendered frames, headless Chromium + SwiftShader)
-import asyncio, json, subprocess, sys, time
+import asyncio, json, os, subprocess, sys, time
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 from playwright.async_api import async_playwright
-N = int(sys.argv[1]) if len(sys.argv) > 1 else 36
+N = int(sys.argv[1]) if len(sys.argv) > 1 else 999
 async def main():
-    srv = subprocess.Popen([sys.executable, '-m', 'http.server', '4402', '--bind', '127.0.0.1'], cwd='/Users/ryugi62/dev/univabio', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    srv = subprocess.Popen([sys.executable, '-m', 'http.server', '4402', '--bind', '127.0.0.1'], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         async with async_playwright() as p:
             b = await p.chromium.launch(args=['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'])
@@ -18,7 +19,7 @@ async def main():
                 out['clips'].append(r)
                 print(s['id'], 'f', s['f'], 'dec', s['decrement'], 'gt', r['gt']['taps'], 'est', r['est']['taps'], 'gtDec', round(r['gt']['decrementPct'] or 0), 'estDec', r['est']['decrementPct'] and round(r['est']['decrementPct']), 'q', r['quality']['ok'], f'{time.time()-t0:.0f}s', flush=True)
             await b.close()
-        json.dump(out, open('/Users/ryugi62/dev/univabio/docs/bench.json', 'w'), indent=1)
+        json.dump(out, open(os.path.join(ROOT, 'docs', 'bench.json'), 'w'), indent=1)
     finally:
         srv.terminate()
 asyncio.run(main())

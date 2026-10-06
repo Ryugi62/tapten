@@ -1,10 +1,12 @@
 # Demo video recorder: neural TTS narration per scene (edge-tts) + Playwright recording of the real app
 # (headless Chromium, Metal GPU, fake webcam fed by the synthetic 3D-hand y4m) → ffmpeg mux to H.264/AAC mp4.
 # Usage: python3 tools/record-demo.py <fakecam.y4m> <out.mp4>
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 import asyncio, json, os, re, subprocess, sys, time
 from playwright.async_api import async_playwright
 
-FF = os.path.expanduser('~/Library/Python/3.9/lib/python/site-packages/imageio_ffmpeg/binaries/ffmpeg-macos-aarch64-v7.1')
+FF = os.environ.get('FFMPEG', 'ffmpeg')
 CAM, OUT = sys.argv[1], sys.argv[2]
 WORK = os.path.join(os.path.dirname(os.path.abspath(OUT)), 'work-demo')
 os.makedirs(WORK, exist_ok=True)
@@ -12,17 +14,15 @@ APP = 'http://127.0.0.1:4410/index.html'
 SL = 'http://127.0.0.1:4410/docs/video/slides.html'
 
 SCENES = [
-    ('title', "TapTen. The ten-second finger-tapping test, measured privately by any webcam."),
-    ('problem', "People with Parkinson's see their neurologist every few months. In between, how they moved when the medication wore off is answered from memory. At the bedside, doctors use a ten-second finger-tapping test and watch whether the taps get slower, and especially smaller. A phone screen-tap test can measure speed, but it cannot see size."),
-    ('home', "TapTen runs that test from an ordinary webcam. The hand tracker runs inside the browser tab, so the video never leaves the device, and there is no account."),
-    ('steps', "You pick the hand, and tag how your medication feels right now: working, wearing off, or not sure."),
-    ('camera', "For this video, the camera input is a synthetic 3D hand, the same one we use for testing, so no real person is filmed. When the badge turns green, a three-second countdown starts, then ten seconds of tapping. The orange line is the thumb-to-index opening we measure."),
-    ('result', "The result puts the number first: taps in ten seconds. Then the size change from the first three to the last three taps. Here the taps clearly shrank. The bars show every single tap. If the hand was lost or the camera was too slow, a quality check refuses to give numbers."),
-    ('diary', "Saved tests build a private diary. With clearly labelled example data, you can see what a patient would bring to the clinic: on and off periods separate in speed and in size change."),
-    ('sheet', "One click turns the diary into a one-page clinic sheet to print or save as a PDF."),
-    ('accuracy', "How accurate is it? We have no patient videos, so we built a ground-truth benchmark: a 3D hand animated with a known tap schedule, rendered, and run through the same tracker and code. The table in the repository shows every clip, including the ones we got wrong."),
-    ('privacy', "Privacy is enforced in code. The page's security policy only allows connections to its own site. While testing, we found the tracking library tries to send a usage log to a Google server. TapTen's policy blocks it."),
-    ('scope', "What is finished: the webcam test, video analysis, quality gate, diary, clinic sheet, and the benchmark. What is planned: a study with real patients and clinicians. TapTen is a tracking tool, not a diagnosis."),
+    ('hook', "This is TapTen: ten seconds of finger tapping, measured by an ordinary webcam, privately, inside the browser. In this video the camera sees a synthetic 3D hand, so no real person is filmed. The test starts by itself once the hand is steady, with beeps, so nobody has to click with a shaky hand."),
+    ('result', "The number comes first: taps in ten seconds. Then the size change from the first three to the last three taps. Here the taps clearly shrank, the sign neurologists look for. Every bar is one tap."),
+    ('problem', "Why it matters. People with Parkinson's see their neurologist every few months, and in between, how they moved when the medication wore off is answered from memory. At the bedside, doctors ask for ten fast, big finger taps and watch whether they get slower, and especially smaller. A phone screen-tap test can measure speed, but it cannot see size. TapTen uses a fixed ten-second window, so every test is comparable."),
+    ('steps', "Each test is tagged with the states of a standard home motor diary, plus minutes since the last dose."),
+    ('diary', "Tests build a private diary in the browser. This is clearly labelled example data, to show what a patient could bring to the clinic: taps per second against minutes since the last dose."),
+    ('sheet', "One click turns the diary into a one-page clinic sheet. It never tells anyone to change medication."),
+    ('accuracy', "How accurate is it? We have no patient videos yet, so we built a ground-truth benchmark: a 3D hand animated with known tap schedules, run through the same model and analysis code. A held-out set was frozen first and run once, and the quality gate refused every bad recording. Every clip, including the misses, is in the repository."),
+    ('privacy', "Privacy is enforced in code. The page may only talk to its own site. While testing, we found the tracking library tries to send a usage log to a Google server, and TapTen's policy blocks it."),
+    ('scope', "Finished: the webcam test, video analysis, quality gate, motor diary, clinic sheet, and the benchmark. Planned: measuring real people, first healthy volunteers, then a study with patients and their neurologists. TapTen is a tracking tool, not a diagnosis."),
     ('end', "TapTen. Ten seconds a day, for a clearer picture at the clinic."),
 ]
 
@@ -43,7 +43,7 @@ CAP_JS = """(t)=>{let c=document.getElementById('cd-cap');if(!c){c=document.crea
 BADGE_JS = """(t)=>{let c=document.getElementById('cd-badge');if(!c){c=document.createElement('div');c.id='cd-badge';c.style.cssText='position:fixed;right:16px;top:64px;z-index:99999;background:#ffb020;color:#111;padding:6px 12px;border-radius:10px;font:700 16px/1.3 -apple-system,sans-serif;pointer-events:none';document.body.appendChild(c)}c.textContent=t}"""
 
 async def main():
-    srv = subprocess.Popen([sys.executable, '-m', 'http.server', '4410', '--bind', '127.0.0.1'], cwd='/Users/ryugi62/dev/univabio', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    srv = subprocess.Popen([sys.executable, '-m', 'http.server', '4410', '--bind', '127.0.0.1'], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     starts = {}
     try:
         async with async_playwright() as p:
@@ -57,32 +57,22 @@ async def main():
                 left = secs[sid] + 0.5 + extra - (time.time() - t0 - starts[sid])
                 if left > 0: await asyncio.sleep(left)
             text = dict(SCENES)
-            for sid in ('title', 'problem'):
-                await pg.goto(f'{SL}#{sid}'); await pg.wait_for_timeout(300); await cap(sid, text[sid]); await hold(sid)
-            await pg.goto(APP); await pg.evaluate("localStorage.clear()"); await pg.goto(APP + '#home'); await pg.wait_for_timeout(400)
-            await cap('home', text['home']); await hold('home')
-            await pg.goto(APP + '#hand'); await pg.wait_for_timeout(300); await cap('steps', text['steps'])
-            await pg.wait_for_timeout(1500); await pg.click('[data-hand=right]'); await pg.wait_for_timeout(900); await pg.click('[data-go=med]')
-            await pg.wait_for_timeout(1500); await pg.click('[data-med=off]'); await pg.wait_for_timeout(900)
-            await hold('steps', -0.5)
-            await pg.click('[data-go=camera]')
-            await cap('camera', text['camera']); await pg.evaluate(BADGE_JS, 'Camera input: synthetic 3D hand (no real person)')
-            await pg.wait_for_selector('#go:not([disabled])', timeout=60000)
-            await pg.wait_for_timeout(1200)
-            await pg.click('#go')
-            await pg.wait_for_selector('.big, .nobox', timeout=60000)
-            await pg.wait_for_timeout(300)
+            LIFT = "(()=>{const st=document.createElement('style');st.textContent='.cta{bottom:86px!important;background:none!important}main{padding-bottom:300px!important}';document.head.appendChild(st)})()"
+            await pg.goto(APP); await pg.evaluate("localStorage.clear()"); await pg.goto(APP + '#hand'); await pg.evaluate(LIFT)
+            await cap('hook', text['hook'])
+            await pg.click('[data-hand=right]'); await pg.wait_for_timeout(400); await pg.click('[data-go=med]'); await pg.wait_for_timeout(400)
+            await pg.click('[data-med=unsure]'); await pg.wait_for_timeout(400); await pg.click('[data-go=camera]')
+            await pg.evaluate(BADGE_JS, 'Camera input: synthetic 3D hand (no real person)')
+            await pg.wait_for_selector('.big, .nobox', timeout=90000)
+            await pg.wait_for_timeout(300); await hold('hook')
             await cap('result', text['result'])
-            await pg.evaluate("window.scrollTo({top:0})")
-            await pg.wait_for_timeout(int(secs['result'] * 450)); await pg.evaluate("window.scrollTo({top:520,behavior:'smooth'})")
+            await pg.wait_for_timeout(int(secs['result'] * 450)); await pg.evaluate("window.scrollTo({top:430,behavior:'smooth'})")
             await hold('result')
-            await pg.click('#save'); await pg.wait_for_timeout(400)
-            # example data, clearly labelled, then the sheet
-            await pg.evaluate("(()=>{const k='tapten.sessions.v1';localStorage.setItem(k,'[]')})()")
-            await pg.goto(APP + '#home'); await pg.goto(APP + '#diary'); await pg.wait_for_timeout(400); await pg.click('#demo'); await pg.wait_for_timeout(500)
-            await cap('diary', text['diary']); await pg.evaluate(BADGE_JS, 'Example data (fictional)')
-            await pg.wait_for_timeout(int(secs['diary'] * 500)); await pg.evaluate("window.scrollTo({top:420,behavior:'smooth'})"); await hold('diary')
-            await pg.goto(APP + '#sheet'); await pg.wait_for_timeout(400); await cap('sheet', text['sheet']); await pg.evaluate(BADGE_JS, 'Example data (fictional)'); await hold('sheet')
+            await pg.goto(f'{SL}#problem'); await pg.wait_for_timeout(300); await cap('problem', text['problem']); await hold('problem')
+            await pg.goto(APP + '#home'); await pg.goto(APP + '#med'); await pg.evaluate(LIFT); await pg.wait_for_timeout(300); await cap('steps', text['steps']); await hold('steps')
+            await pg.evaluate("localStorage.clear()"); await pg.goto(APP + '#home'); await pg.goto(APP + '#diary'); await pg.evaluate(LIFT); await pg.wait_for_timeout(400); await pg.click('#demo'); await pg.wait_for_timeout(600)
+            await cap('diary', text['diary']); await pg.evaluate("window.scrollTo({top:560,behavior:'smooth'})"); await hold('diary')
+            await pg.goto(APP + '#sheet'); await pg.evaluate(LIFT); await pg.wait_for_timeout(400); await cap('sheet', text['sheet']); await pg.wait_for_timeout(int(secs['sheet'] * 500)); await pg.evaluate("window.scrollTo({top:380,behavior:'smooth'})"); await hold('sheet')
             for sid in ('accuracy', 'privacy', 'scope', 'end'):
                 await pg.goto(f'{SL}#{sid}'); await pg.wait_for_timeout(500); await cap(sid, text[sid]); await hold(sid)
             await pg.wait_for_timeout(600)
@@ -97,9 +87,9 @@ async def main():
     for i, (sid, _) in enumerate(SCENES):
         inputs += ['-i', os.path.join(WORK, f'{sid}.mp3')]
         filt.append(f'[{i + 1}:a]adelay={int(starts[sid] * 1000)}|{int(starts[sid] * 1000)}[a{i}]')
-    mix = ''.join(f'[a{i}]' for i in range(len(SCENES))) + f'amix=inputs={len(SCENES)}:normalize=0[aout]'
+    mix = ''.join(f'[a{i}]' for i in range(len(SCENES))) + f'amix=inputs={len(SCENES)}:normalize=0:duration=longest,apad=whole_dur={total:.2f}[aout]'
     subprocess.run([FF, '-y', '-loglevel', 'error', '-i', raw, *inputs, '-filter_complex', ';'.join(filt + [mix]), '-map', '0:v', '-map', '[aout]',
-                    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '22', '-preset', 'medium', '-c:a', 'aac', '-b:a', '160k', '-shortest', OUT], check=True)
+                    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '22', '-preset', 'medium', '-c:a', 'aac', '-b:a', '160k', OUT], check=True)
     print('wrote', OUT, round(dur(OUT), 1), 's')
 
 asyncio.run(main())

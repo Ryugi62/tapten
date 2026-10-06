@@ -82,11 +82,12 @@ export async function createSynthHand(canvas, { width = 640, height = 480, skin 
     root.updateMatrixWorld(true)
   }
   function render() { renderer.render(scene, cam) }
-  return { calibrate, pose, setView, render, gtAperture, canvas }
+  const setVisible = (v) => { root.visible = v }
+  return { calibrate, pose, setView, render, gtAperture, canvas, setVisible }
 }
 
 /** Tap schedule → closure(t). amp(t) shrinks linearly by `decrement` over `duration`; optional pause; small rhythm jitter. */
-export function schedule({ f = 3, a0 = 0.9, decrement = 0, duration = 10, pause = null, jitter = 0.03, seed = 1 }) {
+export function schedule({ f = 3, a0 = 0.9, decrement = 0, duration = 10, pause = null, jitter = 0.03, seed = 1, tremor = 0 }) {
   let s = seed >>> 0; const r = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 32)
   // build cycle boundaries with jittered periods
   const cycles = []; let t = 0
@@ -98,7 +99,9 @@ export function schedule({ f = 3, a0 = 0.9, decrement = 0, duration = 10, pause 
     if (u === null) return 1 - ampAt(pause.at) // held open during the pause
     const c = cycles.find((c) => u >= c.start && u < c.start + c.T) ?? cycles[cycles.length - 1]
     const ph = (u - c.start) / c.T // 0 open → 0.5 closed → 1 open
-    return 1 - ampAt(c.start) * (1 + Math.cos(2 * Math.PI * ph)) / 2
+    const base = 1 - ampAt(c.start) * (1 + Math.cos(2 * Math.PI * ph)) / 2
+    // optional 5 Hz finger tremor riding on the taps (closure units), clipped to the valid range
+    return Math.min(1, Math.max(0, base + tremor * Math.sin(2 * Math.PI * 5 * tt)))
   }
   // ground-truth tap closes inside [0, duration]
   const closes = []

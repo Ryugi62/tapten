@@ -34,3 +34,26 @@ test('diary rejects unknown med state / hand; wipe and export work', () => {
   assert.equal(JSON.parse(svc.exportJson()).sessions.length, 1)
   svc.wipe(); assert.equal(svc.list().length, 0)
 })
+
+test('motor-diary states include on-with-dyskinesia; sheet carries dose timing and the medication warning', () => {
+  const svc = createDiaryService(memoryStore())
+  svc.add({ hand: 'right', medState: 'on-dyskinesia', minutesSinceDose: 90, metrics: m(3.0, 0.8, -5), quality: q })
+  svc.add({ hand: 'right', medState: 'off', minutesSinceDose: 300, beforeFirstDose: true, metrics: m(2.0, 0.5, -40), quality: q })
+  assert.throws(() => svc.add({ hand: 'right', medState: 'on', minutesSinceDose: -5, metrics: m(3, 1, 0), quality: q }))
+  const sheet = svc.sheet()
+  assert.deepEqual(sheet.doseTime.map((d) => d.minutes), [90, 300])
+  assert.equal(sheet.rows[1].beforeFirstDose, true)
+  assert.match(sheet.groups.find((g) => g.medState === 'on-dyskinesia').medLabel, /dyskinesia/)
+  assert.match(sheet.disclaimer, /Do not change medication/)
+})
+
+test('export → import round-trips sessions, skips duplicates, rejects foreign files', () => {
+  const a = createDiaryService(memoryStore())
+  a.add({ hand: 'left', medState: 'on', metrics: m(3, 1, 0), quality: q })
+  const json = a.exportJson()
+  const b = createDiaryService(memoryStore())
+  assert.equal(b.importJson(json), 1)
+  assert.equal(b.importJson(json), 0)
+  assert.throws(() => b.importJson('{"foo":1}'))
+  assert.equal(b.list()[0].hand, 'left')
+})

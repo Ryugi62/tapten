@@ -1,7 +1,7 @@
 # SPEC — TapTen (UnivaBio 2026)
 
 ## §0 Purpose
-A browser page that runs the standard 10-second finger-tapping test (MDS-UPDRS Part III item 3.4: tap index finger on thumb as quickly and as big as possible) from an ordinary webcam, measures **speed, size, rhythm and decrement** (the "sequence effect" that screen-tap tests cannot see), and keeps a private on-device diary tagged with medication state, printable as a one-page clinic sheet.
+A browser page that runs a 10-second finger-tapping test — modelled on MDS-UPDRS Part III item 3.4 (tap index finger on thumb 10 times, as quickly and as big as possible), but with a fixed 10-second window so tests are comparable — from an ordinary webcam, measures **speed, size, rhythm and decrement** (the "sequence effect" that screen-tap tests cannot see), and keeps a private on-device diary tagged with medication state, printable as a one-page clinic sheet.
 It is a **tracking tool for people already diagnosed** — not a diagnosis, not a severity score.
 
 ## §1 Success criteria (numbers)

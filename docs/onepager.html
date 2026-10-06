@@ -17,30 +17,31 @@ code{font-size:9pt;background:#f2f4f6;padding:0 4px;border-radius:4px}
 <p class="tag">UnivaBio 2026 · AI for Human Health · individual entry · live: <b>ryugi62.github.io/tapten</b> · code: <b>github.com/Ryugi62/tapten</b></p>
 <div class="cols"><div>
 <h2>Problem</h2>
-<p>People with Parkinson's disease see a neurologist every few months. Between visits, how their movement changed when medication wore off is reported <b>from memory</b>. At the bedside, clinicians rate the finger-tapping test (MDS-UPDRS item 3.4): tap index finger on thumb, fast and big, for 10 s — and watch for taps that get <b>slower and smaller</b> (the “decrement”). Phone screen-tap tests capture speed but <b>cannot see size</b>.</p>
+<p>People with Parkinson's disease see a neurologist every few months. Between visits, how their movement changed when medication wore off is reported <b>from memory</b>. At the bedside, clinicians rate finger tapping (MDS-UPDRS item 3.4: 10 taps of index finger on thumb, fast and big) and watch for taps that get <b>slower and smaller</b> (the “decrement”). TapTen uses a fixed 10-second window so tests are comparable. Phone screen-tap tests capture speed but <b>cannot see size</b>.</p>
 <h2>What TapTen does</h2>
-<ul><li><b>Webcam test</b>: pick the hand, tag medication state (on / wearing off / not sure), 3-2-1, tap for 10 s.</li>
-<li><b>Numbers first</b>: taps in 10 s, taps/s, typical opening (% of hand length), <b>size change from the first 3 to the last 3 taps</b>, rhythm unevenness, pauses — with a bar for every tap.</li>
+<ul><li><b>Webcam test</b>: pick the hand, tag the motor-diary state (on / on with troublesome dyskinesia / off / not sure) and minutes since dose; it starts by itself when the hand is steady, with beeps.</li>
+<li><b>Numbers first</b>: taps in 10 s, taps/s, <b>size change from the first 3 to the last 3 taps</b>, pauses — a bar for every tap. Only ≤ −25 % is called “clearly smaller”.</li>
 <li><b>Quality gate</b>: refuses to report when the hand was lost (&lt;85 % of frames), the camera was too slow (&lt;15 fps), the hand was too small, or the test was too short.</li>
-<li><b>Private diary</b> with on/off colouring and a <b>one-page clinic sheet</b> (print / PDF). Also analyses a video file.</li></ul>
+<li><b>Private diary</b> (export/import) and a <b>one-page clinic sheet</b> with medians per state and taps vs minutes since dose. Never says what to do with medication.</li></ul>
 <h2>How it works</h2>
-<p>Google MediaPipe Hand Landmarker (pre-trained, Apache-2.0) gives 21 3D hand points per frame inside the browser. Opening = 3D thumb-tip↔index-tip distance ÷ wrist↔middle-knuckle length (distance to camera cancels out). Gap-fill → 3-frame median → 60 ms smoothing → hysteresis peak/trough detection with a threshold of ¼ of the recording's own opening range → metrics. Pure-JS domain code, 25 unit tests, Clean Architecture layers checked in CI-style script. <b>No model was trained.</b></p>
+<p><b>AI part:</b> Google MediaPipe Hand Landmarker (pre-trained, Apache-2.0) finds 21 3D hand points per frame inside the browser — we trained no model. <b>Our part:</b> opening = thumb-tip↔index-tip distance ÷ palm length → robust tap detection → speed, size change, pauses; a quality gate; and a benchmark with exact answers.</p>
+<img src="shots/result-crop.png" alt="Result screen" style="width:100%;border:1px solid #e5e8eb;border-radius:8px;margin-top:4px">
 </div><div>
 <h2>Is it accurate? A ground-truth benchmark</h2>
-<p>We have no patient videos (that needs ethics approval). So a rigged 3D hand (MIT-licensed WebXR model) is animated with a <b>known</b> tap schedule — 1.5–4.5 taps/s, shrinking 0–60 %, pauses, 3 views, several distances — rendered, and run through the <b>same tracker and code</b>.</p>
+<p>No patient videos yet (that needs ethics approval). So a rigged 3D hand is animated with a <b>known</b> tap schedule — 1–5 taps/s, shrinking 0–60 %, pauses, tremor, several views and distances, blur/dim/noise/15 fps — and run through the <b>same model and analysis code</b>. A held-out set was frozen and run once.</p>
 <div class="nums" id="nums"></div>
 <p id="bfoot" style="font-size:8.8pt;color:#4e5968"></p>
 <h2>Privacy, enforced in code</h2>
-<p>The page's Content-Security-Policy is <code>connect-src 'self'</code>; model and engine are bundled; no account. While testing we found the tracking runtime tries to send a usage log to <code>odml.pa.googleapis.com</code> — <b>the policy blocks it</b> (browser console, 2026-10-06).</p>
+<p>The page's Content-Security-Policy is <code>connect-src 'self'</code>; model and engine are bundled; no account. Do not change medication based on TapTen — normal ranges are not known. While testing we found the tracking runtime tries to send a usage log to <code>odml.pa.googleapis.com</code> — <b>the policy blocks it</b> (browser console, 2026-10-06).</p>
 <h2>Who it is for</h2>
 <p>People already living with Parkinson's and their care partners, to bring an objective home record — taken at the times that matter (morning “off”, after a dose) — to appointments. Neurologists get a dated table, not a recollection.</p>
 <h2>Finished vs. planned (honest scope)</h2>
-<p><b>Finished:</b> webcam test, video-file mode, quality gate, diary, clinic sheet, 36-clip benchmark, 390 px mobile layout.<br><b>Planned:</b> validation with real patients and clinicians; both hands per session; tremor and rest measures.</p>
-<div class="box"><b>Not a diagnosis, not an MDS-UPDRS score, not a medical device.</b> Synthetic-hand accuracy is not clinical accuracy. Related research: video-based finger-tapping quantification (e.g., FastEval Parkinsonism, PMC10853559; arXiv 2308.14679) targets clinicians — TapTen is a patient-held, on-device diary.</div>
+<p><b>Finished:</b> webcam test (auto-start, beeps), video-file mode, quality gate, motor diary + clinic sheet, benchmark with held-out and negative sets, CI.<br><b>Planned:</b> measuring real people (healthy volunteers, test–retest), then patients with their neurologists; both-hand asymmetry.</p>
+<div class="box"><b>Not a diagnosis, not an MDS-UPDRS score, not a medical device.</b> Synthetic-hand accuracy is not clinical accuracy. Closest prior work: PARK web finger-tapping test (Islam et al., npj Digit Med 2023) gives a severity score from uploaded video; FastEval (PMC10853559) and arXiv 2308.14679 target clinicians. TapTen gives no score, uploads nothing, and adds medication timing for the clinic.</div>
 </div></div>
 <p class="foot">Built by Taegeol Kim (student, Changwon National University, Korea) with AI coding assistance; SPEC.md and 25 tests document every function. Licenses: MIT (TapTen) · Apache-2.0 (MediaPipe) · MIT (three.js, WebXR hand model — benchmark only).</p>
 <script>
 fetch('bench-summary.json').then(r=>r.json()).then(b=>{
-document.getElementById('nums').innerHTML=`<div class="n"><b>${b.cleanExact}/${b.cleanClips}</b><span>clean clips, exact tap count</span></div><div class="n"><b>${b.hardWithin1}/${b.hardClips}</b><span>degraded clips within ±1 tap</span></div><div class="n"><b>${b.decMedianErr} pts</b><span>median size-change error</span></div><div class="n"><b>${b.shrinkingDetected}</b><span>shrinking clips flagged</span></div>`
-document.getElementById('bfoot').textContent=`${b.clips} clips (${b.cleanClips} clean + ${b.hardClips} degraded: blur, dim light, noise, half at 15 fps). Degraded exact count ${b.hardExact}/${b.hardClips}; max size-change error ${b.decMaxErr} pts; steady clips not flagged ${b.steadyNotFlagged}. Every clip in docs/bench.json.`;document.body.dataset.ready='1'})
+document.getElementById('nums').innerHTML=`<div class="n"><b>${b.cleanExact}/${b.cleanClips}</b><span>clean: exact tap count</span></div><div class="n"><b>${b.hardExact}/${b.hardClips}</b><span>degraded: exact</span></div><div class="n"><b>${b.holdoutExact}/${b.holdoutClips}</b><span>held-out: exact</span></div><div class="n"><b>${b.negativeRejected}</b><span>bad recordings refused</span></div>`
+document.getElementById('bfoot').textContent=`Exact count overall ${b.allExact}/${b.positiveClips} (${b.allExactPct} %; our own target was 90 % — ${b.s1Pass?'met':'not met'}). Size change vs truth: bias ${b.decBias} pts, 95 % limits ±${b.decLoa} pts. Pauses found ${b.pauseSensitivity}, false ${b.pauseFalsePos}. Every clip, misses included: docs/bench-table.md.`;document.body.dataset.ready='1'})
 </script></html>

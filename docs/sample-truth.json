@@ -1,0 +1,1 @@
+{"source":"tools/make-video.py docs/sample-synthetic 3 0.4 10.5 (seed 5, view rx -1.57 ry -1.57 rz 1.57)","taps":30,"rateHz":3.0,"decrementPct":-36,"note":"Ground truth from the 3D model over the first 10 s (the app analyses 0–10 s)."}

@@ -16,7 +16,7 @@ test('AC-7 app code never sends data: no XHR/WebSocket/sendBeacon; fetch only fo
   for (const f of files) {
     const src = readFileSync(f, 'utf8')
     assert.doesNotMatch(src, /XMLHttpRequest|WebSocket|sendBeacon|EventSource/, f)
-    for (const m of src.matchAll(/fetch\(([^)]*)\)/g)) assert.match(m[1], /^'docs\/(sample-synthetic\.webm|bench-summary\.json)'$/, `${f}: ${m[0]}`)
+    for (const m of src.matchAll(/fetch\(([^)]*)\)/g)) assert.match(m[1], /^'docs\/(sample-synthetic\.webm|sample-truth\.json|bench-summary\.json)'$/, `${f}: ${m[0]}`)
   }
 })
 

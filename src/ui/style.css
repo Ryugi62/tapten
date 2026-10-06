@@ -1,7 +1,7 @@
 :root {
   --bg: #ffffff; --fg: #191f28; --sub: #4e5968; --muted: #8b95a1; --line: #e5e8eb; --card: #f9fafb;
   --brand: #3182f6; --brand-ink: #ffffff; --ok: #0f9d58; --warn: #c26a00; --no: #d22030;
-  --on: #3182f6; --off: #e8590c; --unsure: #8b95a1;
+  --on: #3182f6; --off: #e8590c; --dysk: #7048e8; --unsure: #6b7684;
   --radius: 16px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
 }
@@ -20,7 +20,8 @@ h1 { font-size: 28px; line-height: 1.3; letter-spacing: -0.02em; margin: 16px 0 
 h2 { font-size: 22px; line-height: 1.35; margin: 28px 0 8px; }
 p { margin: 8px 0; }
 .sub { color: var(--sub); }
-.small { font-size: 13px; color: var(--muted); }
+.small { font-size: 15px; color: var(--sub); }
+.note { font-size: 14px; color: var(--sub); }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin: 16px 0; }
 .stack > * + * { margin-top: 24px; }
 .cta { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--bg) 70%, transparent); }
@@ -45,12 +46,12 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .chip.ok { background: var(--ok); }
 .timer { position: absolute; right: 12px; top: 12px; font-size: 44px; font-weight: 800; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.5); font-variant-numeric: tabular-nums; }
 .big { font-size: 56px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; font-variant-numeric: tabular-nums; }
-.big small { font-size: 20px; font-weight: 700; color: var(--sub); margin-left: 6px; }
+.big small { font-size: 20px; font-weight: 700; color: var(--sub); margin-left: 8px; letter-spacing: normal; }
 .verdict { font-size: 17px; font-weight: 600; margin-top: 6px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
 .stat b { display: block; font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.stat span { font-size: 13px; color: var(--sub); }
+.stat span { font-size: 14px; color: var(--sub); }
 .warnbox { border-left: 4px solid var(--warn); }
 .nobox { border-left: 4px solid var(--no); }
 details { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin: 12px 0; }
@@ -71,3 +72,11 @@ input[type=number] { font-size: 17px; padding: 10px 12px; border-radius: 10px; b
   @page { size: A4; margin: 14mm; }
 }
 @media (max-width: 420px) { .big { font-size: 48px; } .grid2 { gap: 8px; } }
+
+.badge { display: inline-block; background: #ffb020; color: #111; font-weight: 800; font-size: 13px; padding: 3px 10px; border-radius: 8px; letter-spacing: .02em; }
+.howto { display: flex; gap: 12px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; margin: 12px 0; }
+.howto video { width: 120px; height: 90px; object-fit: cover; border-radius: 10px; background: #ddd; flex: none; }
+label.check { display: flex; gap: 10px; align-items: center; min-height: 44px; font-size: 16px; }
+label.check input { width: 22px; height: 22px; }
+.links { display: grid; gap: 4px; }
+.truth { border-left: 4px solid var(--ok); }

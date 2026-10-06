@@ -1,9 +1,11 @@
 # E2E smoke: real page, real tracker, sample video → result screen; also camera path with a fake webcam (y4m).
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 import asyncio, subprocess, sys, json, os
 from playwright.async_api import async_playwright
-SHOTS = '/Users/ryugi62/dev/univabio/docs/shots'
+SHOTS = os.path.join(ROOT, 'docs', 'shots')
 async def main():
-    srv = subprocess.Popen([sys.executable, '-m', 'http.server', '4404', '--bind', '127.0.0.1'], cwd='/Users/ryugi62/dev/univabio', stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    srv = subprocess.Popen([sys.executable, '-m', 'http.server', '4404', '--bind', '127.0.0.1'], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     reqs = []
     try:
         async with async_playwright() as p:
@@ -23,7 +25,7 @@ async def main():
                     await pg.wait_for_selector('.big', timeout=240000)
                     print('RESULT', (await pg.inner_text('main'))[:400].replace('\n', ' | '))
                     await pg.screenshot(path=f'{SHOTS}/result-{w}.png', full_page=True)
-                    await pg.click('#save'); await pg.wait_for_timeout(500)
+                    await pg.wait_for_timeout(300)
                     await pg.evaluate('localStorage.clear()'); await pg.goto('http://127.0.0.1:4404/index.html#home'); await pg.goto('http://127.0.0.1:4404/index.html#diary'); await pg.wait_for_timeout(300); await pg.click('#demo'); await pg.wait_for_timeout(500)
                     await pg.screenshot(path=f'{SHOTS}/diary-{w}.png', full_page=True)
                     await pg.goto('http://127.0.0.1:4404/index.html#sheet'); await pg.wait_for_timeout(500)
@@ -34,14 +36,13 @@ async def main():
                     await pg.goto('http://127.0.0.1:4404/index.html#hand')
                     await pg.screenshot(path=f'{SHOTS}/step-hand-{w}.png')
                     await pg.click('[data-hand=right]'); await pg.click('[data-go=med]')
-                    await pg.click('[data-med=off]'); await pg.screenshot(path=f'{SHOTS}/step-med-{w}.png'); await pg.click('[data-go=camera]')
+                    await pg.click('[data-med=unsure]'); await pg.screenshot(path=f'{SHOTS}/step-med-{w}.png'); await pg.click('[data-go=camera]')
                     await pg.wait_for_selector('#go:not([disabled])', timeout=120000)
                     await pg.screenshot(path=f'{SHOTS}/camera-ready-{w}.png')
-                    await pg.click('#go'); await pg.wait_for_timeout(8000)
+                    await pg.wait_for_timeout(9000)  # auto-start: steady 2 s → 5 s countdown → recording
                     await pg.screenshot(path=f'{SHOTS}/camera-recording-{w}.png')
                     await pg.wait_for_selector('.big, .nobox', timeout=60000)
                     print('CAMERA', (await pg.inner_text('main'))[:300].replace('\n', ' | '))
-                    print('CAMDBG', await pg.evaluate('JSON.stringify(window.__taptenLast && {n: window.__taptenLast.n, found: window.__taptenLast.found})'))
                     await pg.screenshot(path=f'{SHOTS}/camera-result-{w}.png', full_page=True)
                 await ctx.close()
             await b.close()

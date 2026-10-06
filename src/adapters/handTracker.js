@@ -1,7 +1,8 @@
 // Adapter: MediaPipe Hand Landmarker (Apache-2.0), loaded from this site's own /vendor folder — no third-party requests.
 import { HandLandmarker, FilesetResolver } from '../../vendor/mediapipe/vision_bundle.mjs'
 
-const d2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
+// Image-space hand size as a fraction of frame WIDTH (x and y are normalised separately, so rescale y by height/width).
+const handSpan = (a, b, w, h) => Math.hypot(a.x - b.x, (a.y - b.y) * (h / w))
 
 export async function createHandTracker({ base = new URL('../../vendor/', import.meta.url).href } = {}) {
   const vision = await FilesetResolver.forVisionTasks(base + 'mediapipe/wasm')
@@ -20,7 +21,8 @@ export async function createHandTracker({ base = new URL('../../vendor/', import
       const ts = Math.max(lastTs + 1, Math.round(tsMs)); lastTs = ts
       const r = lmk.detectForVideo(source, ts)
       const w = r.worldLandmarks?.[0], im = r.landmarks?.[0]
-      return { lm: w ? w.map((p) => ({ x: p.x, y: p.y, z: p.z })) : null, image: im ?? null, handScale: im ? d2(im[0], im[9]) : undefined }
+      const W = source.videoWidth || source.width || 1, H = source.videoHeight || source.height || 1
+      return { lm: w ? w.map((p) => ({ x: p.x, y: p.y, z: p.z })) : null, image: im ?? null, handScale: im ? handSpan(im[0], im[9], W, H) : undefined }
     },
     async reset() { lmk.close(); lmk = await make(); lastTs = 0 },
   }
