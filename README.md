@@ -51,7 +51,7 @@ Limits: a synthetic hand has no skin texture, real tremor or real lighting; no p
 ## How TapTen differs from existing work
 | | who uses it | where it runs | output | medication context |
 |---|---|---|---|---|
-| PARK finger-tapping (Islam et al., *npj Digital Medicine* 6:156, 2023; parktest.net) | patients, for research | web, video analysed by the research system | severity score 0–4 | — |
+| PARK finger-tapping (Islam et al., *npj Digital Medicine* 6:156, 2023; parktest.net) | patients, for research | web, webcam video scored for research | severity score 0–4 | — |
 | FastEval Parkinsonism (PMC10853559) · video hand-pose bradykinesia (arXiv 2308.14679) | clinicians / research | server or research code | ratings | — |
 | Wearable sensors (e.g. Kinesia) | clinics, trials | dedicated device | motor scores | — |
 | **TapTen** | patients and care partners, between visits | **inside the browser, nothing uploaded** | speed, size change, pauses — **no score** | motor-diary state, minutes since dose, clinic sheet |

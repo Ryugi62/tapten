@@ -13,7 +13,7 @@ p{margin:3px 0}ul{margin:3px 0 3px 16px;padding:0}li{margin:1px 0}
 .foot{font-size:8.6pt;color:#4e5968;margin-top:6px}
 code{font-size:9pt;background:#f2f4f6;padding:0 4px;border-radius:4px}
 </style>
-<h1>Tap<span>Ten</span> — the 10-second finger-tapping test, measured privately by any webcam</h1>
+<h1>Tap<span>Ten</span> — a 10-second finger-tapping test, measured privately by any webcam</h1>
 <p class="tag">UnivaBio 2026 · AI for Human Health · individual entry · live: <b>ryugi62.github.io/tapten</b> · code: <b>github.com/Ryugi62/tapten</b></p>
 <div class="cols"><div>
 <h2>Problem</h2>
@@ -25,7 +25,7 @@ code{font-size:9pt;background:#f2f4f6;padding:0 4px;border-radius:4px}
 <li><b>Private diary</b> (export/import) and a <b>one-page clinic sheet</b> with medians per state and taps vs minutes since dose. Never says what to do with medication.</li></ul>
 <h2>How it works</h2>
 <p><b>AI part:</b> Google MediaPipe Hand Landmarker (pre-trained, Apache-2.0) finds 21 3D hand points per frame inside the browser — we trained no model. <b>Our part:</b> opening = thumb-tip↔index-tip distance ÷ palm length → robust tap detection → speed, size change, pauses; a quality gate; and a benchmark with exact answers.</p>
-<img src="shots/result-crop.png" alt="Result screen" style="width:100%;border:1px solid #e5e8eb;border-radius:8px;margin-top:4px">
+<img src="shots/result-crop.png" alt="Result screen" style="width:100%;height:170px;object-fit:cover;object-position:top;border:1px solid #e5e8eb;border-radius:8px;margin-top:4px">
 </div><div>
 <h2>Is it accurate? A ground-truth benchmark</h2>
 <p>No patient videos yet (that needs ethics approval). So a rigged 3D hand is animated with a <b>known</b> tap schedule — 1–5 taps/s, shrinking 0–60 %, pauses, tremor, several views and distances, blur/dim/noise/15 fps — and run through the <b>same model and analysis code</b>. A held-out set was frozen and run once.</p>
@@ -37,9 +37,9 @@ code{font-size:9pt;background:#f2f4f6;padding:0 4px;border-radius:4px}
 <p>People already living with Parkinson's and their care partners, to bring an objective home record — taken at the times that matter (morning “off”, after a dose) — to appointments. Neurologists get a dated table, not a recollection.</p>
 <h2>Finished vs. planned (honest scope)</h2>
 <p><b>Finished:</b> webcam test (auto-start, beeps), video-file mode, quality gate, motor diary + clinic sheet, benchmark with held-out and negative sets, CI.<br><b>Planned:</b> measuring real people (healthy volunteers, test–retest), then patients with their neurologists; both-hand asymmetry.</p>
-<div class="box"><b>Not a diagnosis, not an MDS-UPDRS score, not a medical device.</b> Synthetic-hand accuracy is not clinical accuracy. Closest prior work: PARK web finger-tapping test (Islam et al., npj Digit Med 2023) gives a severity score from uploaded video; FastEval (PMC10853559) and arXiv 2308.14679 target clinicians. TapTen gives no score, uploads nothing, and adds medication timing for the clinic.</div>
+<div class="box"><b>Not a diagnosis, not an MDS-UPDRS score, not a medical device.</b> Synthetic-hand accuracy is not clinical accuracy. Closest prior work: PARK web finger-tapping test (Islam et al., npj Digit Med 2023) scores severity (0–4) from webcam video for research; FastEval (PMC10853559) and arXiv 2308.14679 target clinicians. TapTen gives no score, uploads nothing, and adds medication timing for the clinic.</div>
 </div></div>
-<p class="foot">Built by Taegeol Kim (student, Changwon National University, Korea) with AI coding assistance; SPEC.md and 25 tests document every function. Licenses: MIT (TapTen) · Apache-2.0 (MediaPipe) · MIT (three.js, WebXR hand model — benchmark only).</p>
+<p class="foot">Built by Taegeol Kim (student, Changwon National University, Korea) with AI coding assistance; SPEC.md and 28 unit tests cover the domain logic. Licenses: MIT (TapTen) · Apache-2.0 (MediaPipe) · MIT (three.js, WebXR hand model — benchmark only).</p>
 <script>
 fetch('bench-summary.json').then(r=>r.json()).then(b=>{
 document.getElementById('nums').innerHTML=`<div class="n"><b>${b.cleanExact}/${b.cleanClips}</b><span>clean: exact tap count</span></div><div class="n"><b>${b.hardExact}/${b.hardClips}</b><span>degraded: exact</span></div><div class="n"><b>${b.holdoutExact}/${b.holdoutClips}</b><span>held-out: exact</span></div><div class="n"><b>${b.negativeRejected}</b><span>bad recordings refused</span></div>`

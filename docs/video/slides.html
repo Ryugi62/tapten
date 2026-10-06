@@ -13,10 +13,10 @@ p,li{font-size:30px;line-height:1.45;color:#333d4b;margin:6px 0}
 .small{font-size:22px;color:#6b7684}
 code{font-size:24px;background:#f2f4f6;padding:4px 10px;border-radius:8px}
 </style>
-<section id="title"><h1>TapTen</h1><p style="font-size:38px">The 10-second finger-tapping test,<br>measured privately by <span class="b k">any webcam</span>.</p><p class="small" style="margin-top:40px">UnivaBio 2026 · AI for Human Health · built by one student</p></section>
+<section id="title"><h1>TapTen</h1><p style="font-size:38px">A 10-second finger-tapping test,<br>measured privately by <span class="b k">any webcam</span>.</p><p class="small" style="margin-top:40px">UnivaBio 2026 · AI for Human Health · built by one student</p></section>
 <section id="problem"><h2>The gap between appointments</h2>
 <ul><li>People with Parkinson's see a neurologist every few months.</li><li>In between, “how was I when the medication wore off?” is answered <span class="k">from memory</span>.</li><li>At the bedside, doctors ask for 10 fast, big finger taps and look for taps that get <span class="k">slower</span> and <span class="k">smaller</span>.</li><li>Phone screen-tap tests see speed — <span class="b k">they cannot see size</span>.</li><li class="small" style="font-size:22px">TapTen uses a fixed 10-second window so every test is comparable.</li></ul></section>
-<section id="accuracy"><h2>How accurate? A ground-truth benchmark</h2><p>No patient videos, so: a 3D hand animated with a <b>known</b> tap schedule → rendered → the <b>same tracker and code</b>.</p>
+<section id="accuracy"><h2>How accurate? A ground-truth benchmark</h2><p>No patient videos yet, so: a 3D hand animated with a <b>known</b> tap schedule → rendered → the <b>same model and analysis code</b> as the app.</p>
 <div class="grid" id="nums"></div><p class="small" id="foot" style="margin-top:22px"></p></section>
 <section id="privacy"><h2>Privacy, enforced in code</h2><div class="two"><div><p>Content-Security-Policy:</p><p><code>connect-src 'self'</code></p><p>The page may only talk to its own site. Model + engine are bundled; no account, no upload.</p></div>
 <div><p>Found while testing:</p><p>the tracking library tries to send a usage log to <code style="font-size:20px">odml.pa.googleapis.com</code></p><p class="b k">→ blocked by TapTen's policy.</p></div></div></section>
