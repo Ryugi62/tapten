@@ -1,0 +1,21 @@
+{
+ "generated": "2026-10-06",
+ "clips": 36,
+ "speeds": "1.5–4.5 taps/s",
+ "countExact": 32,
+ "countMae": 0.17,
+ "decMedianErr": 5.4,
+ "decMaxErr": 18.3,
+ "rateMedianErr": 0,
+ "hesitationAgree": 34,
+ "qualityPass": 36,
+ "shrinkingDetected": "24/24",
+ "steadyNotFlagged": "11/12",
+ "detectMin": 1,
+ "cleanClips": 24,
+ "cleanExact": 23,
+ "hardClips": 12,
+ "hardExact": 9,
+ "cleanWithin1": 24,
+ "hardWithin1": 11
+}

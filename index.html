@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; img-src 'self' blob: data:; media-src 'self' blob: mediastream:; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>TapTen — 10-second finger tapping, measured privately</title>
+<meta name="description" content="Run the standard 10-second finger-tapping test from any webcam. Speed, size, rhythm and decrement — measured in your browser, kept on your device, printable for your neurologist.">
+<link rel="stylesheet" href="src/ui/style.css">
+</head>
+<body>
+<header class="top">
+  <button class="brand" data-go="home" aria-label="TapTen home">TapTen</button>
+  <span class="lock" title="Video is processed inside this browser tab. Nothing is uploaded.">🔒 On-device</span>
+</header>
+<main id="app" tabindex="-1"></main>
+<noscript>TapTen needs JavaScript to run the camera test.</noscript>
+<script type="module" src="src/ui/app.js"></script>
+</body>
+</html>

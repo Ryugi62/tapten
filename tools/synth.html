@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#222">
+<canvas id="c" width="640" height="480"></canvas>
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import { createSynthHand, schedule } from './synth-hand.js'
+import { HandLandmarker, FilesetResolver } from '/node_modules/@mediapipe/tasks-vision/vision_bundle.mjs'
+const hand = await createSynthHand(document.getElementById('c'))
+window.hand = hand; window.schedule = schedule
+window.cal = hand.calibrate()
+const vision = await FilesetResolver.forVisionTasks('/node_modules/@mediapipe/tasks-vision/wasm')
+window.makeLandmarker = async (mode = 'VIDEO') => HandLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: '/vendor/models/hand_landmarker.task', delegate: 'CPU' }, runningMode: mode, numHands: 1 })
+window.ready = true
+</script>
+<script type="module">
+import { clipSpecs, runClip } from './bench.js'
+window.clipSpecs = clipSpecs
+window.runOne = (spec) => runClip(window.hand, window.schedule, window.makeLandmarker, spec)
+</script>

@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#222">
+<canvas id="c" width="640" height="480"></canvas>
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { HandLandmarker, FilesetResolver } from '/node_modules/@mediapipe/tasks-vision/vision_bundle.mjs';
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
+renderer.setClearColor(0xd8d2c8);
+const scene=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(40,640/480,0.01,10);
+cam.position.set(0,0.0,0.45); cam.lookAt(0,0,0);
+scene.add(new THREE.HemisphereLight(0xffffff,0x887766,2.2));
+const dl=new THREE.DirectionalLight(0xffffff,1.5); dl.position.set(0.3,0.5,1); scene.add(dl);
+const gltf=await new GLTFLoader().loadAsync('/node_modules/@webxr-input-profiles/assets/dist/profiles/generic-hand/right.glb');
+const root=gltf.scene; scene.add(root);
+root.traverse(o=>{ if(o.isMesh){ o.material=new THREE.MeshStandardMaterial({color:0xe0ac8a,roughness:0.6}); }});
+window.bones={}; root.traverse(o=>{ window.bones[o.name]=o; });
+const box=new THREE.Box3().setFromObject(root); const ctr=box.getCenter(new THREE.Vector3()); root.position.sub(ctr);
+window.root=root;
+const vision=await FilesetResolver.forVisionTasks('/node_modules/@mediapipe/tasks-vision/wasm');
+const hl=await HandLandmarker.createFromOptions(vision,{baseOptions:{modelAssetPath:'/vendor/models/hand_landmarker.task',delegate:'CPU'},runningMode:'IMAGE',numHands:1});
+window.probe=(rx,ry,rz)=>{ root.rotation.set(rx,ry,rz); renderer.render(scene,cam); const r=hl.detect(canvas); return {n:r.landmarks.length, score:r.handedness[0]?.[0]?.score, tip4:r.landmarks[0]?.[4], tip8:r.landmarks[0]?.[8]}; };
+window.ready=true;
+</script>

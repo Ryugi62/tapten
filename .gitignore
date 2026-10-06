@@ -1,0 +1,4 @@
+node_modules/
+docs/video/work-*/
+*.y4m
+.DS_Store

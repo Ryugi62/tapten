@@ -1,0 +1,22 @@
+{
+  "name": "tapten",
+  "version": "0.1.0",
+  "description": "TapTen: the 10-second finger-tapping test from any webcam, measured privately in the browser.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "layers": "node scripts/check-layers.mjs",
+    "check": "npm test && npm run layers",
+    "serve": "python3 -m http.server 4321 --bind 127.0.0.1",
+    "bench": "python3 tools/run-bench.py 36 && node scripts/bench-summary.mjs"
+  },
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
+    "@webxr-input-profiles/assets": "^1.0.20",
+    "three": "^0.186.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
