@@ -24,7 +24,7 @@ async def main():
                     print('RESULT', (await pg.inner_text('main'))[:400].replace('\n', ' | '))
                     await pg.screenshot(path=f'{SHOTS}/result-{w}.png', full_page=True)
                     await pg.click('#save'); await pg.wait_for_timeout(500)
-                    await pg.click('#demo'); await pg.wait_for_timeout(500)
+                    await pg.evaluate('localStorage.clear()'); await pg.goto('http://127.0.0.1:4404/index.html#home'); await pg.goto('http://127.0.0.1:4404/index.html#diary'); await pg.wait_for_timeout(300); await pg.click('#demo'); await pg.wait_for_timeout(500)
                     await pg.screenshot(path=f'{SHOTS}/diary-{w}.png', full_page=True)
                     await pg.goto('http://127.0.0.1:4404/index.html#sheet'); await pg.wait_for_timeout(500)
                     await pg.pdf(path=f'{SHOTS}/clinic-sheet.pdf', format='A4', print_background=True)

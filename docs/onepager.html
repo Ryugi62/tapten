@@ -1,14 +1,14 @@
 <!doctype html><html lang="en"><meta charset="utf-8"><title>TapTen — one-page project description</title>
 <style>
-@page{size:A4;margin:12mm 13mm}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#191f28;font-size:10.2pt;line-height:1.42;margin:0}
-h1{font-size:22pt;margin:0;letter-spacing:-.02em}h1 span{color:#3182f6}
+@page{size:A4;margin:10mm 12mm}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#191f28;font-size:9.3pt;line-height:1.36;margin:0}
+h1{font-size:18pt;margin:0;letter-spacing:-.02em}h1 span{color:#3182f6}
 .tag{font-size:11pt;color:#4e5968;margin:2px 0 8px}
-h2{font-size:11.5pt;margin:9px 0 3px;color:#191f28;border-bottom:1.5px solid #e5e8eb;padding-bottom:2px}
+h2{font-size:10.8pt;margin:7px 0 3px;color:#191f28;border-bottom:1.5px solid #e5e8eb;padding-bottom:2px}
 p{margin:3px 0}ul{margin:3px 0 3px 16px;padding:0}li{margin:1px 0}
 .cols{display:grid;grid-template-columns:1.05fr .95fr;gap:14px}
 .nums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:5px 0}
-.n{background:#f2f4f6;border-radius:8px;padding:6px 8px}.n b{display:block;font-size:15pt}.n span{font-size:8pt;color:#4e5968}
+.n{background:#f2f4f6;border-radius:8px;padding:6px 8px}.n b{display:block;font-size:13pt;white-space:nowrap}.n span{font-size:8pt;color:#4e5968}
 .box{background:#fff8eb;border-left:3px solid #c26a00;padding:5px 8px;border-radius:4px;font-size:9.4pt}
 .foot{font-size:8.6pt;color:#4e5968;margin-top:6px}
 code{font-size:9pt;background:#f2f4f6;padding:0 4px;border-radius:4px}
@@ -38,7 +38,7 @@ code{font-size:9pt;background:#f2f4f6;padding:0 4px;border-radius:4px}
 <p><b>Finished:</b> webcam test, video-file mode, quality gate, diary, clinic sheet, 36-clip benchmark, 390 px mobile layout.<br><b>Planned:</b> validation with real patients and clinicians; both hands per session; tremor and rest measures.</p>
 <div class="box"><b>Not a diagnosis, not an MDS-UPDRS score, not a medical device.</b> Synthetic-hand accuracy is not clinical accuracy. Related research: video-based finger-tapping quantification (e.g., FastEval Parkinsonism, PMC10853559; arXiv 2308.14679) targets clinicians — TapTen is a patient-held, on-device diary.</div>
 </div></div>
-<p class="foot">Built by Taegeol Kim (student, Changwon National University, Korea) with AI coding assistance; I can walk judges through every function. Licenses: MIT (TapTen) · Apache-2.0 (MediaPipe) · MIT (three.js, WebXR hand model — benchmark only).</p>
+<p class="foot">Built by Taegeol Kim (student, Changwon National University, Korea) with AI coding assistance; SPEC.md and 25 tests document every function. Licenses: MIT (TapTen) · Apache-2.0 (MediaPipe) · MIT (three.js, WebXR hand model — benchmark only).</p>
 <script>
 fetch('bench-summary.json').then(r=>r.json()).then(b=>{
 document.getElementById('nums').innerHTML=`<div class="n"><b>${b.cleanExact}/${b.cleanClips}</b><span>clean clips, exact tap count</span></div><div class="n"><b>${b.hardWithin1}/${b.hardClips}</b><span>degraded clips within ±1 tap</span></div><div class="n"><b>${b.decMedianErr} pts</b><span>median size-change error</span></div><div class="n"><b>${b.shrinkingDetected}</b><span>shrinking clips flagged</span></div>`

@@ -79,7 +79,7 @@ async def main():
             await pg.click('#save'); await pg.wait_for_timeout(400)
             # example data, clearly labelled, then the sheet
             await pg.evaluate("(()=>{const k='tapten.sessions.v1';localStorage.setItem(k,'[]')})()")
-            await pg.goto(APP + '#diary'); await pg.wait_for_timeout(300); await pg.click('#demo'); await pg.wait_for_timeout(500)
+            await pg.goto(APP + '#home'); await pg.goto(APP + '#diary'); await pg.wait_for_timeout(400); await pg.click('#demo'); await pg.wait_for_timeout(500)
             await cap('diary', text['diary']); await pg.evaluate(BADGE_JS, 'Example data (fictional)')
             await pg.wait_for_timeout(int(secs['diary'] * 500)); await pg.evaluate("window.scrollTo({top:420,behavior:'smooth'})"); await hold('diary')
             await pg.goto(APP + '#sheet'); await pg.wait_for_timeout(400); await cap('sheet', text['sheet']); await pg.evaluate(BADGE_JS, 'Example data (fictional)'); await hold('sheet')
