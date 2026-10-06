@@ -11,11 +11,12 @@ People with Parkinson's disease usually see a neurologist every few months. In b
 
 At the bedside, one of the most informative checks takes seconds: **finger tapping** (MDS-UPDRS Part III, item 3.4). You tap your index finger on your thumb ten times, as fast and as big as you can. The clinician watches whether the taps get **slower** and, especially, **smaller** toward the end — the "decrement".
 
-Phone screen-tap tests can measure speed, but a finger hitting glass cannot show how wide the hand opened. A webcam can. TapTen uses a fixed 10-second window, as many digital tapping tests do, so every test is comparable.
+Phone screen-tap tests can measure speed, but a finger hitting glass cannot show how wide the fingers open. A webcam can. TapTen uses a fixed 10-second window, as many digital tapping tests do, so every test is comparable.
 
 ## What it does
-- **The test, from any webcam.** Choose the hand and tag the state used in standard home motor diaries: on / on with troublesome dyskinesia / off / not sure, plus "before first dose" and minutes since the last dose. A looping clip shows the movement. The test **starts by itself** once the hand is steady (no clicking with a shaky hand), with a 5-second countdown and beeps.
-- **Numbers first.** Taps in 10 s, taps per second, **size change from the first 3 to the last 3 taps**, size trend per tap and pauses, with a bar for every tap. Only a change of −25 % or more is called "clearly smaller", because one test can be off by several points.
+- **The test, from any webcam.** Choose the hand and tag the medication state (adapted from the Hauser home motor diary: on / on with troublesome dyskinesia / off / not sure), plus "before first dose" and time since the last dose (one-tap chips). A looping clip shows the movement. The test **starts by itself** once the hand is in view and held still for 2 seconds — no clicking with a shaky hand — with a 5-second countdown and beeps.
+- **Numbers first.** Taps in 10 s, taps per second, **size change from the first 3 to the last 3 taps**, **speed change** (first vs last gaps) and pauses, with a bar for every tap; the clinic-style first-10-tap size change is in Details.
+- **No over-interpretation.** One test can be off by up to about ±19.4 points on our benchmark, so a single result is described neutrally. After 3 tests with the same hand and medication state, TapTen compares each new test with **your own usual**. If the tracker sees the other hand than the one you chose, it says so.
 - **A quality gate.** No numbers when the hand was lost in more than 15 % of frames, the camera ran under 15 fps, the hand was too small, or the test was too short. It says what to fix.
 - **A private motor diary and a clinic sheet.** Tests stay in this browser (export / import / delete). One click prints a one-page sheet with medians per state and a chart of taps per second against minutes since the last dose.
 - **No webcam?** "Try a sample recording" runs the whole pipeline on a synthetic-hand clip and shows the **true answer next to the measured one**. Any video file can be analysed too.
@@ -26,7 +27,8 @@ Phone screen-tap tests can measure speed, but a finger hitting glass cannot show
 - **Our part:** turning those points into clinical measures, and proving how well that works.
   - **Opening:** 3D distance thumb tip ↔ index tip, divided by palm length (wrist ↔ middle knuckle), so moving closer to the camera doesn't change it.
   - **Taps:** gap fill → 3-frame median (removes single-frame glitches) → 60 ms smoothing → hysteresis peak/trough detection with a threshold of ¼ of the recording's own opening range. Tiny swings and closes faster than 10 Hz are ignored.
-- **Code:** plain JavaScript in Clean Architecture layers (`domain` ← `application` ← `adapters` ← `ui`). 28 unit tests and a layer check run in GitHub Actions on every push.
+- **Timing:** tap intervals use the camera frame's own timestamp (`requestVideoFrameCallback`), not the render time.
+- **Code:** plain JavaScript in Clean Architecture layers (`domain` ← `application` ← `adapters` ← `ui`). 33 unit tests and a layer check run in GitHub Actions on every push.
 
 ## How accurate is it?
 We have no patient videos yet, because collecting them needs ethics approval. Instead we built a **ground-truth benchmark**. A rigged 3D hand is animated with a **known** tap schedule, and the frames go through the **same MediaPipe model and the same analysis code** as the app. Only the camera and video plumbing is bypassed; the full app path was checked separately with a synthetic fake webcam.
@@ -35,13 +37,16 @@ We have no patient videos yet, because collecting them needs ethics approval. In
 |---|---|---|---|
 | clean | 24 | 23 | 24 |
 | degraded (blur, dim light, noise, half at 15 fps) | 12 | 9 | 11 |
-| **held-out** (frozen before running, run once; 1–5 taps/s, new viewpoints, some with 5 Hz tremor) | 24 | 21 | 23 |
+| **held-out 1** (frozen; 1–5 taps/s, new viewpoints, some with 5 Hz tremor) | 24 | 21 | 23 |
+| **held-out 2** (pre-registered in its own commit before running: severe 70–90 % decrement, slowing, < 1 tap/s, small taps) | 20 | 16 | 18 |
 
-- **Our own target missed or met, stated plainly:** exact count on ≥ 90 % of clips — we got 53/60 (88.3 %), **not met**.
-- **Size change vs truth:** bias -2.1 points, 95 % limits of agreement ±16.6 points.
-- **Pauses:** found 9/10, with 2/50 false pauses.
+- **Our own target missed or met, stated plainly:** exact count on ≥ 90 % of clips — we got 69/80 (86.3 %), **not met**.
+- **Size change vs truth:** bias 0.1 points, 95 % limits of agreement ±19.4 points; single-clip errors are wide (worst 38.9 points), which is why single tests aren't interpreted.
+- **Severe decrement** (true ≤ −60 %): median error 9.3 points. The very smallest late taps at 3 taps/s with an 80 % shrink were still missed (25/30 and 27/30) — reported as a limit, not hidden.
+- **Slowing:** flagged in 6/6 slowing clips (median error 1.9 points).
+- **Pauses:** found 9/10, with 3/70 false pauses.
 - **Quality gate:** refused **6/6** deliberately bad recordings (hand lost 30 %, 8 fps, hand 2.4 m away).
-- **Absolute tap size depends on the viewpoint:** median error per view -1 % / -28.9 % / -35 %. So TapTen leads with size *change* and asks people to compare tests taken the same way.
+- **Absolute tap size depends on the viewpoint:** median error per view 0.8 % / -28.3 % / -32.8 %. So TapTen leads with size *change* and asks people to compare tests taken the same way.
 - Every clip, including the misses: `docs/bench-table.md`.
 
 **Limits, plainly:** a synthetic hand is not a person. It has no skin texture, no real tremor and no real-world lighting. No person — with or without Parkinson's — has been measured yet.
@@ -51,12 +56,14 @@ We have no patient videos yet, because collecting them needs ethics approval. In
 - **Found while testing:** the MediaPipe runtime tries to send a usage log to `odml.pa.googleapis.com`, and TapTen's policy blocks it. You can see this in the browser console, and a test keeps network code from creeping back in.
 
 ## How it differs from existing work
-- **PARK web finger-tapping test** (Islam et al., *npj Digital Medicine* 2023) scores severity 0–4 from video for research.
+- **PARK web finger-tapping test** (Islam et al., *npj Digital Medicine* 2023) scores severity 0–4 from webcam video for research.
+- **VisionMD** (npj Parkinson's Disease 2025) is open-source desktop software that analyses recorded videos locally for clinicians and researchers.
 - **FastEval Parkinsonism** (PMC10853559) and video hand-pose bradykinesia work (arXiv 2308.14679) serve clinicians.
-- **TapTen** gives **no score**, uploads **nothing**, and adds what a neurologist asks about between visits: the medication state and minutes since the dose, on a one-page sheet.
+- **TapTen** needs no install, gives **no score**, uploads **nothing**, runs a live test with a quality gate, and adds what a neurologist asks about between visits: the medication state and time since the dose, on a one-page sheet.
 
 ## Challenges we ran into
-- **Slow, noisy taps were double-counted.** At 1.5 taps/s with blur and noise, single-frame glitches looked like extra taps (19 counted vs 14 true in our first degraded run). A 3-frame median, a range-based threshold and a minimum-size rule fixed it. Because we tuned on that set, we then froze a separate **held-out** set and ran it once.
+- **Slow, noisy taps were double-counted.** At 1.5 taps/s with blur and noise, single-frame glitches looked like extra taps (19 counted vs 14 true in our first degraded run). A 3-frame median and a range-based threshold fixed it. Because we tuned on that set, we froze a **held-out** set and ran it once.
+- **Our first glitch filter would have hidden severe disease.** Reviewers pointed out that dropping "tiny" taps also drops the tiny late taps of a severe decrement — exactly the clinical signal. The filter now drops a tiny swing only if it also breaks the rhythm, and we pre-registered a second held-out set of severe cases in a separate commit before running it.
 - **Seeking a video handed the tracker stale frames.** We now wait for the new frame to be presented and copy it to a canvas first.
 - **The rigged hand model had no bone hierarchy,** so we wrote forward kinematics to make it tap.
 
@@ -72,6 +79,6 @@ We have no patient videos yet, because collecting them needs ethics approval. In
 - Measure real people: healthy volunteers first (test–retest, hand-counted slow-motion video).
 - Then a study with people with Parkinson's and their neurologists.
 - Both-hand asymmetry.
-- Checking that the tracked hand matches the chosen hand.
+- An offline cache for the 19 MB tracker download.
 
-> TapTen is a tracking tool. It is not a diagnosis, not an MDS-UPDRS score, and not a medical device.
+> TapTen is a tracking tool and a research prototype. It is not a diagnosis, not an MDS-UPDRS score, and not cleared or approved as a medical device.

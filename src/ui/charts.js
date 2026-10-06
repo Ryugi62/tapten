@@ -13,10 +13,10 @@ export function waveformSvg(series, taps, { w = 440, h = 170 } = {}) {
   const d = pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.a).toFixed(1)}`).join('')
   const peaks = taps.map((t) => `<circle cx="${x(t.tOpen).toFixed(1)}" cy="${y(t.peak).toFixed(1)}" r="3" fill="var(--brand)"/>`).join('')
   const closes = taps.map((t) => `<line x1="${x(t.tClose).toFixed(1)}" x2="${x(t.tClose).toFixed(1)}" y1="${h - pad.b}" y2="${h - pad.b + 6}" stroke="var(--sub)"/>`).join('')
-  const ticks = [0, 2, 4, 6, 8, 10].map((s) => `<text x="${x(s)}" y="${h - 6}" font-size="11" text-anchor="middle" fill="var(--muted)">${s}s</text>`).join('')
+  const ticks = [0, 2, 4, 6, 8, 10].map((s) => `<text x="${x(s)}" y="${h - 6}" font-size="14" text-anchor="middle" fill="var(--muted)">${s}s</text>`).join('')
   return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Finger opening over 10 seconds; dots mark the top of each tap">
   <line x1="${pad.l}" x2="${w - pad.r}" y1="${h - pad.b}" y2="${h - pad.b}" stroke="var(--line)"/>
-  <text x="4" y="${pad.t + 8}" font-size="11" fill="var(--muted)">open</text><text x="4" y="${h - pad.b}" font-size="11" fill="var(--muted)">closed</text>
+  <text x="4" y="${pad.t + 8}" font-size="14" fill="var(--muted)">open</text><text x="4" y="${h - pad.b}" font-size="14" fill="var(--muted)">closed</text>
   <path d="${d}" fill="none" stroke="var(--fg)" stroke-width="1.6"/>${peaks}${closes}${ticks}</svg>`
 }
 
@@ -31,7 +31,7 @@ export function tapBarsSvg(taps, { w = 440, h = 110 } = {}) {
     return `<rect x="${(pad.l + i * bw + bw * 0.15).toFixed(1)}" y="${(h - pad.b - bh).toFixed(1)}" width="${(bw * 0.7).toFixed(1)}" height="${bh.toFixed(1)}" rx="2" fill="var(--brand)" opacity="${0.45 + 0.55 * (i / Math.max(1, taps.length - 1))}"/>`
   }).join('')
   return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Size of each tap from first to last">${bars}
-  <text x="${pad.l}" y="${h - 4}" font-size="11" fill="var(--muted)">first tap</text><text x="${w - pad.r}" y="${h - 4}" font-size="11" text-anchor="end" fill="var(--muted)">last tap</text></svg>`
+  <text x="${pad.l}" y="${h - 4}" font-size="14" fill="var(--muted)">first tap</text><text x="${w - pad.r}" y="${h - 4}" font-size="14" text-anchor="end" fill="var(--muted)">last tap</text></svg>`
 }
 
 const MED_COLOR = { on: 'var(--on)', 'on-dyskinesia': 'var(--dysk)', off: 'var(--off)', unsure: 'var(--unsure)' }
@@ -58,10 +58,10 @@ export function trendSvg(sessions, key, { w = 440, h = 140, label = '', fmt = (v
   const dots = s.map((x0) => `<g><title>${esc(x0.at.slice(0, 16).replace('T', ' '))} · ${esc(x0.medState)} · ${esc(fmt(x0.metrics[key]))}</title>${mark(+x(Date.parse(x0.at)).toFixed(1), +y(x0.metrics[key]).toFixed(1), x0.medState)}</g>`).join('')
   const day = (t) => new Date(t).toISOString().slice(5, 10)
   return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)} over time, colored by medication state">
-  <text x="4" y="${y(hi - padv) + 4}" font-size="11" fill="var(--muted)">${esc(fmt(hi - padv))}</text>
-  <text x="4" y="${y(lo + padv) + 4}" font-size="11" fill="var(--muted)">${esc(fmt(lo + padv))}</text>
+  <text x="4" y="${y(hi - padv) + 4}" font-size="14" fill="var(--muted)">${esc(fmt(hi - padv))}</text>
+  <text x="4" y="${y(lo + padv) + 4}" font-size="14" fill="var(--muted)">${esc(fmt(lo + padv))}</text>
   <line x1="${pad.l}" x2="${w - pad.r}" y1="${h - pad.b}" y2="${h - pad.b}" stroke="var(--line)"/>
-  <text x="${pad.l}" y="${h - 6}" font-size="11" fill="var(--muted)">${day(t0)}</text><text x="${w - pad.r}" y="${h - 6}" font-size="11" text-anchor="end" fill="var(--muted)">${day(t1)}</text>
+  <text x="${pad.l}" y="${h - 6}" font-size="14" fill="var(--muted)">${day(t0)}</text><text x="${w - pad.r}" y="${h - 6}" font-size="14" text-anchor="end" fill="var(--muted)">${day(t1)}</text>
   ${dots}</svg>`
 }
 
@@ -77,10 +77,10 @@ export function doseScatterSvg(points, { w = 440, h = 150 } = {}) {
   let lo = Math.min(...rs), hi = Math.max(...rs); if (hi - lo < 0.5) { lo -= 0.25; hi += 0.25 }
   const pad = { l: 34, r: 10, t: 10, b: 28 }
   const x = (m) => pad.l + (m / maxM) * (w - pad.l - pad.r), y = (v) => pad.t + (1 - (v - lo) / (hi - lo)) * (h - pad.t - pad.b)
-  const ticks = [0, 60, 120, 180, 240, 300, 360, 480, 600].filter((m) => m <= maxM).map((m) => `<text x="${x(m)}" y="${h - 12}" font-size="10" text-anchor="middle" fill="var(--muted)">${m}</text>`).join('')
+  const ticks = [0, 60, 120, 180, 240, 300, 360, 480, 600].filter((m) => m <= maxM).map((m) => `<text x="${x(m)}" y="${h - 12}" font-size="13" text-anchor="middle" fill="var(--muted)">${m}</text>`).join('')
   return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Taps per second by minutes since last dose">
-  <text x="2" y="${y(hi) + 4}" font-size="10" fill="var(--muted)">${hi.toFixed(1)}</text><text x="2" y="${y(lo) + 4}" font-size="10" fill="var(--muted)">${lo.toFixed(1)}</text>
-  <line x1="${pad.l}" x2="${w - pad.r}" y1="${h - pad.b}" y2="${h - pad.b}" stroke="var(--line)"/>${ticks}<text x="${w - pad.r}" y="${h - 1}" font-size="10" text-anchor="end" fill="var(--muted)">minutes since last dose</text>
+  <text x="2" y="${y(hi) + 4}" font-size="13" fill="var(--muted)">${hi.toFixed(1)}</text><text x="2" y="${y(lo) + 4}" font-size="13" fill="var(--muted)">${lo.toFixed(1)}</text>
+  <line x1="${pad.l}" x2="${w - pad.r}" y1="${h - pad.b}" y2="${h - pad.b}" stroke="var(--line)"/>${ticks}<text x="${w - pad.r}" y="${h - 1}" font-size="13" text-anchor="end" fill="var(--muted)">minutes since last dose</text>
   ${points.map((p) => mark(+x(p.minutes).toFixed(1), +y(p.rateHz).toFixed(1), p.medState, 4.5)).join('')}</svg>`
 }
 export { esc }

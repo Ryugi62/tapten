@@ -23,8 +23,11 @@ Diagnosis, UPDRS severity score, model training, cloud accounts, clinical valida
 | decrement | `decrementPct` | % change of amplitude from the first 3 taps to the last 3 taps (negative = getting smaller) |
 | rhythm CV | `rhythmCv` | coefficient of variation of inter-tap intervals |
 | hesitation | `hesitations` | intervals > 2 × median interval |
+| speed change | `speedChangePct` | tap rate over the last 3 gaps vs the first 3 gaps (negative = slower) |
+| first-10 decrement | `decrement10Pct` | size change within the first 10 taps (taps 8–10 vs 1–3) |
+| hand side | `side` | majority left/right label from the tracker (confident frames only) |
 | quality gate | `assessQuality()` | pass/fail + reasons |
-| session | `Session` | one finished test + med state (`on`/`off`/`unsure`) + hand (`left`/`right`) + note |
+| session | `Session` | one finished test + med state (`on`/`on-dyskinesia`/`off`/`unsure`, adapted from the Hauser diary) + `beforeFirstDose` + `minutesSinceDose` + hand (`left`/`right`) + note |
 | diary | `Diary` | list of sessions on this device |
 | clinic sheet | `buildClinicSheet()` | printable summary model |
 
@@ -32,7 +35,7 @@ Diagnosis, UPDRS severity score, model training, cloud accounts, clinical valida
 `Frame[] → apertureSeries → smooth → detectTaps → computeMetrics`, `Frame[] + meta → assessQuality`. Sessions persist via a `SessionStore` port (localStorage adapter; in-memory fake in tests).
 
 ## §5 Use cases
-- UC-1 Run a test from the webcam (setup guide → 3-2-1 → 10 s → result).
+- UC-1 Run a test from the webcam (hand → medication state → auto-start when the hand is visible and still for 2 s, or Start button → 5-s countdown with beeps → 10 s → result).
 - UC-2 Analyse an uploaded video file (same pipeline; for accessibility and validation).
 - UC-3 Save to diary with medication state; see trend.
 - UC-4 Print the clinic sheet.
@@ -45,8 +48,10 @@ Diagnosis, UPDRS severity score, model training, cloud accounts, clinical valida
 - AC-4 Given 30 % frames without a hand, then quality gate fails with reason `hand-lost`.
 - AC-5 Given small jitter (noise σ = 3 % of amplitude) and no tapping, then 0 taps.
 - AC-6 Given a diary of on/off sessions, the clinic sheet groups by med state and shows median rate/amplitude/decrement per group and the date range.
-- AC-7 `index.html` CSP contains `connect-src 'self'`; no source file calls `fetch`/`XMLHttpRequest`/`WebSocket`/`sendBeacon` outside the model loader.
+- AC-7 `index.html` CSP contains `connect-src 'self'`; no source file uses `XMLHttpRequest`/`WebSocket`/`sendBeacon`/`EventSource`, and `fetch` only loads bundled files (`docs/sample-synthetic.webm`, `docs/sample-truth.json`, `docs/bench-summary.json`).
 - AC-8 Synthetic benchmark script prints the S1 table from real MediaPipe runs.
+- AC-9 A single test is described neutrally (no "clearly"/"abnormal"); comparison with the person's own median appears only after ≥ 3 earlier tests of the same hand and state.
+- AC-10 A severe 85 % decrement keeps its small late taps; a slowing series gives a negative speed change.
 
 ## §7 Layers
 `src/domain/` (pure) ← `src/application/` ← `src/adapters/` (MediaPipe, camera, localStorage) ← `src/ui/`. `scripts/check-layers.mjs` enforces.

@@ -8,21 +8,24 @@ from playwright.async_api import async_playwright
 
 FF = os.environ.get('FFMPEG', 'ffmpeg')
 CAM, OUT = sys.argv[1], sys.argv[2]
+SHORT = sys.argv[3] if len(sys.argv) > 3 else None  # a ~5 s clip used to show the quality gate refusing
 WORK = os.path.join(os.path.dirname(os.path.abspath(OUT)), 'work-demo')
 os.makedirs(WORK, exist_ok=True)
 APP = 'http://127.0.0.1:4410/index.html'
 SL = 'http://127.0.0.1:4410/docs/video/slides.html'
 
 SCENES = [
-    ('hook', "This is TapTen: ten seconds of finger tapping, measured by an ordinary webcam, privately, inside the browser. In this video the camera sees a synthetic 3D hand, so no real person is filmed. The test starts by itself once the hand is steady, with beeps, so nobody has to click with a shaky hand."),
-    ('result', "The number comes first: taps in ten seconds. Then the size change from the first three to the last three taps. Here the taps clearly shrank, the sign neurologists look for. Every bar is one tap."),
-    ('problem', "Why it matters. People with Parkinson's see their neurologist every few months, and in between, how they moved when the medication wore off is answered from memory. At the bedside, doctors ask for ten fast, big finger taps and watch whether they get slower, and especially smaller. A phone screen-tap test can measure speed, but it cannot see size. TapTen uses a fixed ten-second window, so every test is comparable."),
-    ('steps', "Each test is tagged with the states of a standard home motor diary, plus minutes since the last dose."),
-    ('diary', "Tests build a private diary in the browser. This is clearly labelled example data, to show what a patient could bring to the clinic: taps per second against minutes since the last dose."),
-    ('sheet', "One click turns the diary into a one-page clinic sheet. It never tells anyone to change medication."),
-    ('accuracy', "How accurate is it? We have no patient videos yet, so we built a ground-truth benchmark: a 3D hand animated with known tap schedules, run through the same model and analysis code. A held-out set was frozen first and run once, and the quality gate refused every bad recording. Every clip, including the misses, is in the repository."),
-    ('privacy', "Privacy is enforced in code. The page may only talk to its own site. While testing, we found the tracking library tries to send a usage log to a Google server, and TapTen's policy blocks it."),
-    ('scope', "Finished: the webcam test, video analysis, quality gate, motor diary, clinic sheet, and the benchmark. Planned: measuring real people, first healthy volunteers, then a study with patients and their neurologists. TapTen is a tracking tool, not a diagnosis."),
+    ('problem', "People with Parkinson's see their neurologist every few months. In between, how they moved when the medication wore off is answered from memory. Doctors watch ten fast finger taps get slower and smaller. A phone screen-tap test cannot see how wide the fingers open. A webcam can."),
+    ('steps', "TapTen runs that test privately in the browser. Pick the hand, then the medication state and time since the last dose, each with a single tap."),
+    ('camera', "In this video the camera sees a synthetic 3D hand, so no real person is filmed. When the hand is in view and still, the test starts by itself, with beeps: five seconds to get ready, then ten seconds of tapping."),
+    ('result', "Numbers first: taps in ten seconds, the size change from the first to the last taps, and the speed change. One test is described neutrally, because a single test can be off. After three tests, TapTen compares each new one with your own usual."),
+    ('gate', "If a recording cannot support numbers, the quality gate refuses it and says what to fix. Here, a five-second clip is too short."),
+    ('sample', "No webcam? The sample runs the same pipeline on a synthetic clip with a known answer, so you can check the measurement yourself."),
+    ('diary', "Tests build a private diary. This is clearly labelled example data: taps per second against time since the last dose."),
+    ('sheet', "One click makes a one-page clinic sheet. It never tells anyone to change medication."),
+    ('accuracy', "We have no patient videos yet, so we built a benchmark with exact answers, including two held-out sets frozen before running, one with severe and slowing cases. Every clip, including the misses, is in the repository."),
+    ('privacy', "The page may only talk to its own site. We found the tracking library tries to send a usage log to Google; TapTen's policy blocks it."),
+    ('scope', "Next: measuring real people, first healthy volunteers, then a study with patients and their neurologists. TapTen is a tracking tool, not a diagnosis."),
     ('end', "TapTen. Ten seconds a day, for a clearer picture at the clinic."),
 ]
 
@@ -57,22 +60,28 @@ async def main():
                 left = secs[sid] + 0.5 + extra - (time.time() - t0 - starts[sid])
                 if left > 0: await asyncio.sleep(left)
             text = dict(SCENES)
-            LIFT = "(()=>{const st=document.createElement('style');st.textContent='.cta{bottom:86px!important;background:none!important}main{padding-bottom:300px!important}';document.head.appendChild(st)})()"
-            await pg.goto(APP); await pg.evaluate("localStorage.clear()"); await pg.goto(APP + '#hand'); await pg.evaluate(LIFT)
-            await cap('hook', text['hook'])
-            await pg.click('[data-hand=right]'); await pg.wait_for_timeout(400); await pg.click('[data-go=med]'); await pg.wait_for_timeout(400)
-            await pg.click('[data-med=unsure]'); await pg.wait_for_timeout(400); await pg.click('[data-go=camera]')
-            await pg.evaluate(BADGE_JS, 'Camera input: synthetic 3D hand (no real person)')
-            await pg.wait_for_selector('.big, .nobox', timeout=90000)
-            await pg.wait_for_timeout(300); await hold('hook')
-            await cap('result', text['result'])
-            await pg.wait_for_timeout(int(secs['result'] * 450)); await pg.evaluate("window.scrollTo({top:430,behavior:'smooth'})")
-            await hold('result')
+            LIFT = "(()=>{const st=document.createElement('style');st.textContent='main{zoom:1.3}.cta{bottom:86px!important;background:none!important}.cta .inner{max-width:900px}main{padding-bottom:320px!important}';document.head.appendChild(st)})()"
+            async def app(hash):
+                await pg.goto(APP + '#home'); await pg.goto(APP + '#' + hash); await pg.evaluate(LIFT)
             await pg.goto(f'{SL}#problem'); await pg.wait_for_timeout(300); await cap('problem', text['problem']); await hold('problem')
-            await pg.goto(APP + '#home'); await pg.goto(APP + '#med'); await pg.evaluate(LIFT); await pg.wait_for_timeout(300); await cap('steps', text['steps']); await hold('steps')
-            await pg.evaluate("localStorage.clear()"); await pg.goto(APP + '#home'); await pg.goto(APP + '#diary'); await pg.evaluate(LIFT); await pg.wait_for_timeout(400); await pg.click('#demo'); await pg.wait_for_timeout(600)
-            await cap('diary', text['diary']); await pg.evaluate("window.scrollTo({top:560,behavior:'smooth'})"); await hold('diary')
-            await pg.goto(APP + '#sheet'); await pg.evaluate(LIFT); await pg.wait_for_timeout(400); await cap('sheet', text['sheet']); await pg.wait_for_timeout(int(secs['sheet'] * 500)); await pg.evaluate("window.scrollTo({top:380,behavior:'smooth'})"); await hold('sheet')
+            await pg.goto(APP); await pg.evaluate("localStorage.clear()"); await app('hand'); await cap('steps', text['steps'])
+            await pg.wait_for_timeout(1500); await pg.click('[data-hand=right]'); await pg.wait_for_timeout(300); await pg.evaluate(LIFT)
+            await pg.wait_for_timeout(1500); await pg.click('[data-med=unsure]'); await pg.evaluate(LIFT); await pg.wait_for_timeout(900); await pg.click('[data-mins="120"]'); await pg.evaluate(LIFT)
+            await hold('steps', -1.0)
+            await pg.click('[data-go=camera]'); await pg.evaluate(LIFT)
+            await cap('camera', text['camera']); await pg.evaluate(BADGE_JS, 'Camera input: synthetic 3D hand (no real person)')
+            await pg.wait_for_selector('.big, .nobox', timeout=90000)
+            await pg.evaluate(LIFT); await pg.wait_for_timeout(300); await hold('camera')
+            await cap('result', text['result'])
+            await pg.wait_for_timeout(int(secs['result'] * 500)); await pg.evaluate("window.scrollTo({top:560,behavior:'smooth'})")
+            await hold('result')
+            await app('file'); await cap('gate', text['gate'])
+            await pg.set_input_files('#f', SHORT); await pg.wait_for_selector('.nobox', timeout=60000); await pg.evaluate(LIFT); await hold('gate')
+            await app('sample'); await cap('sample', text['sample'])
+            await pg.wait_for_selector('.truth', timeout=120000); await pg.evaluate(LIFT); await pg.wait_for_timeout(2500); await hold('sample')
+            await pg.evaluate("localStorage.clear()"); await app('diary'); await pg.wait_for_timeout(400); await pg.click('#demo'); await pg.wait_for_timeout(600); await pg.evaluate(LIFT)
+            await cap('diary', text['diary']); await pg.evaluate("window.scrollTo({top:900,behavior:'smooth'})"); await hold('diary')
+            await app('sheet'); await pg.wait_for_timeout(400); await cap('sheet', text['sheet']); await pg.wait_for_timeout(int(secs['sheet'] * 500)); await pg.evaluate("window.scrollTo({top:500,behavior:'smooth'})"); await hold('sheet')
             for sid in ('accuracy', 'privacy', 'scope', 'end'):
                 await pg.goto(f'{SL}#{sid}'); await pg.wait_for_timeout(500); await cap(sid, text[sid]); await hold(sid)
             await pg.wait_for_timeout(600)

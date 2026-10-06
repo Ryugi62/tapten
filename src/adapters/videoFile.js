@@ -23,7 +23,7 @@ export async function framesFromVideo(video, tracker, { fps = 30, maxSeconds = 1
     await shown
     g.drawImage(video, 0, 0, cv.width, cv.height)
     const r = tracker.detect(cv, t * 1000)
-    frames.push({ t, lm: r.lm, handScale: r.handScale, image: r.image })
+    frames.push({ t, lm: r.lm, handScale: r.handScale, image: r.image, side: r.side })
     if (i % 10 === 0) onProgress(t / dur)
   }
   return frames

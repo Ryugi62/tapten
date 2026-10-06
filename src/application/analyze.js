@@ -12,5 +12,9 @@ export function analyzeFrames(frames, { span = [0, 10] } = {}) {
   const taps = detectTaps(series)
   const duration = rel.length > 1 ? rel[rel.length - 1].t - rel[0].t : 0
   const metrics = computeMetrics(taps, Math.max(duration, 1e-6))
-  return { quality, metrics, taps, series }
+  // majority hand label from the tracker (only frames where it was confident)
+  const sides = rel.map((f) => f.side).filter(Boolean)
+  const right = sides.filter((x) => x === 'right').length
+  const side = sides.length >= 10 ? { label: right >= sides.length / 2 ? 'right' : 'left', share: Math.max(right, sides.length - right) / sides.length } : null
+  return { quality, metrics, taps, series, side }
 }

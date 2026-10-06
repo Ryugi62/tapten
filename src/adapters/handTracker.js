@@ -22,7 +22,10 @@ export async function createHandTracker({ base = new URL('../../vendor/', import
       const r = lmk.detectForVideo(source, ts)
       const w = r.worldLandmarks?.[0], im = r.landmarks?.[0]
       const W = source.videoWidth || source.width || 1, H = source.videoHeight || source.height || 1
-      return { lm: w ? w.map((p) => ({ x: p.x, y: p.y, z: p.z })) : null, image: im ?? null, handScale: im ? handSpan(im[0], im[9], W, H) : undefined }
+      // Which hand the model sees. Checked on our synthetic RIGHT hand rendered un-mirrored: reported "Right" (3/3 views).
+      const hd = r.handedness?.[0]?.[0]
+      const side = hd && hd.score >= 0.8 ? hd.categoryName.toLowerCase() : undefined
+      return { lm: w ? w.map((p) => ({ x: p.x, y: p.y, z: p.z })) : null, image: im ?? null, handScale: im ? handSpan(im[0], im[9], W, H) : undefined, side }
     },
     async reset() { lmk.close(); lmk = await make(); lastTs = 0 },
   }

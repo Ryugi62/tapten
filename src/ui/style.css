@@ -80,3 +80,17 @@ label.check { display: flex; gap: 10px; align-items: center; min-height: 44px; f
 label.check input { width: 22px; height: 22px; }
 .links { display: grid; gap: 4px; }
 .truth { border-left: 4px solid var(--ok); }
+
+.chipbtn { min-height: 44px; padding: 0 14px; }
+.chipbtn[aria-pressed="true"] { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 10%, var(--bg)); color: var(--brand); }
+.chipbtn[disabled], input[disabled] { opacity: .4; }
+.choice small { font-size: 15px; }
+.legend { font-size: 15px; }
+@media print {
+  .sheet h1 { font-size: 18pt; margin: 0 0 4px; }
+  .sheet svg { max-height: 120px; }
+  .sheet table { font-size: 9.5pt; }
+  .sheet th, .sheet td { padding: 3px 6px; }
+  .sheet .small { font-size: 8.5pt; margin: 3px 0; }
+  .sheet .legend { font-size: 9pt; }
+}

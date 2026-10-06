@@ -144,3 +144,10 @@ test('decrement over the first 10 taps is reported alongside the 10-second figur
   const { metrics } = analyzeFrames(framesFromAperture(fn))
   assert.ok(metrics.decrement10Pct < -5 && metrics.decrement10Pct > metrics.decrementPct, `${metrics.decrement10Pct} vs ${metrics.decrementPct}`)
 })
+
+test('hand side: majority of confident tracker labels; null when too few', () => {
+  const fr = framesFromAperture(sine(3)).map((f, i) => ({ ...f, side: i % 10 === 0 ? 'right' : 'left' }))
+  const r = analyzeFrames(fr)
+  assert.equal(r.side.label, 'left'); assert.ok(r.side.share > 0.85)
+  assert.equal(analyzeFrames(framesFromAperture(sine(3))).side, null)
+})
