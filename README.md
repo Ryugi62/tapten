@@ -7,7 +7,7 @@ People with Parkinson's disease see a neurologist every few months. In between, 
 
 TapTen runs that test from an ordinary webcam, inside the browser tab:
 
-- **Numbers first** — taps in 10 s, taps per second, **size change from the first 3 to the last 3 taps**, **speed change** (first 3 vs last 3 gaps), pauses, a bar for every tap; the first-10-tap (clinic-style) size change in Details. One test is described neutrally and compared with your own usual after 3 tests.
+- **Numbers first** — taps in 10 s, taps per second, **size change from the first 3 to the last 3 taps**, **speed change** (first 3 vs last 3 gaps), pauses, a bar for every tap; the first-10-tap (clinic-style) size change in Details. One test is described in plain words with its uncertainty; after 3 tests it is placed inside or outside your own usual range (never narrower than ±20 points).
 - **Quality gate** — no numbers when the hand was lost (> 15 % of frames), the camera was too slow (< 15 fps), the hand was too small, or the test was too short.
 - **No clicking needed** — starts by itself when the hand is in view and still for 2 s (the Start button works whenever the hand is in view), 5-second countdown with beeps, a looping example of the movement.
 - **Private motor diary** — tests tagged with states adapted from the Hauser home motor diary (on / on with troublesome dyskinesia / off / not sure), "before first dose", minutes since last dose; export and import; a **one-page clinic sheet** with medians per state and a taps-vs-minutes-since-dose chart.

@@ -55,8 +55,8 @@ export function trendSvg(sessions, key, { w = 440, h = 140, label = '', fmt = (v
   const pad = { l: 44, r: 12, t: 14, b: 24 }
   const x = (t) => pad.l + ((t - t0) / (t1 - t0)) * (w - pad.l - pad.r)
   const y = (v) => pad.t + (1 - (v - lo) / (hi - lo)) * (h - pad.t - pad.b)
-  const dots = s.map((x0) => `<g><title>${esc(x0.at.slice(0, 16).replace('T', ' '))} · ${esc(x0.medState)} · ${esc(fmt(x0.metrics[key]))}</title>${mark(+x(Date.parse(x0.at)).toFixed(1), +y(x0.metrics[key]).toFixed(1), x0.medState)}</g>`).join('')
-  const day = (t) => new Date(t).toISOString().slice(5, 10)
+  const dots = s.map((x0) => `<g><title>${esc(new Date(x0.at).toLocaleString())} · ${esc(x0.medState)} · ${esc(fmt(x0.metrics[key]))}</title>${mark(+x(Date.parse(x0.at)).toFixed(1), +y(x0.metrics[key]).toFixed(1), x0.medState)}</g>`).join('')
+  const day = (t) => { const d = new Date(t); return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` } // local date
   return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)} over time, colored by medication state">
   <text x="4" y="${y(hi - padv) + 4}" font-size="16" fill="var(--sub)">${esc(fmt(hi - padv))}</text>
   <text x="4" y="${y(lo + padv) + 4}" font-size="16" fill="var(--sub)">${esc(fmt(lo + padv))}</text>

@@ -29,7 +29,7 @@ const bench = () => (benchPromise ??= fetch('docs/bench-summary.json').then((r) 
 const errorLine = (b) => (b ? `On our synthetic-hand benchmark a single test's size change is typically within ±${Math.round(b.decMedianErr)} points, and 95% of tests are within ±${Math.round(b.decLoa)} points; accuracy on real hands is not yet known.` : 'Accuracy on real hands is not yet known.')
 const pct = (v) => (v === null || v === undefined ? '—' : `${v > 0 ? '+' : ''}${Math.round(v)}%`)
 const fixed = (v, d = 1) => (v === null || v === undefined ? '—' : Number(v).toFixed(d))
-const SAFETY = 'Do not change your medication based on these numbers — bring them to your neurologist. Sudden weakness or numbness on one side, a drooping face or trouble speaking can be a stroke: call emergency services now.'
+const SAFETY = 'Do not change your medication based on these numbers — bring them to your neurologist. This test does not detect stroke: if you notice sudden new weakness or numbness on one side, a drooping face or trouble speaking, call emergency services.'
 const UNKNOWN_NORMS = 'Normal ranges for this home test are not known yet, and it cannot tell whether someone has Parkinson\'s.'
 
 function cta(html) { return `<div class="cta"><div class="inner">${html}</div></div>` }
@@ -43,9 +43,9 @@ const screens = {
   home() {
     const n = diary.list().length
     show(`<section class="stack">
-      <div><h1>A 10-second finger-tapping test, measured by your webcam.</h1>
+      <div><h1>A 10-second finger-tapping test, measured by your webcam.</h1><p class="sub" style="margin:0 0 8px">For people living with Parkinson's — a private record to bring to your neurologist.</p>
       <div class="howto"><video src="docs/sample-synthetic.webm" autoplay loop muted playsinline aria-label="The tapping movement"></video><p class="note">Tap your index finger on your thumb, fast and as wide as you can, for 10 seconds. TapTen shows whether the taps get <b>smaller</b> or <b>slower</b> — and keeps the record on your device for your next appointment.</p></div></div>
-      <div class="links"><button class="link" data-go="sample">▶ Try a sample recording (no webcam needed)</button><button class="link" data-go="file">Analyse a video file</button><button class="link" data-go="diary">My diary (${n} test${n === 1 ? '' : 's'})</button><button class="link" data-go="about">How it works · accuracy</button></div>
+      <div class="links"><button class="secondary" data-go="sample" style="justify-self:start">▶ Try a sample recording (no webcam needed)</button><button class="link" data-go="file">Analyse a video file</button><button class="link" data-go="diary">My diary (${n} test${n === 1 ? '' : 's'})</button><button class="link" data-go="about">How it works · accuracy</button></div>
       <div class="card"><b>🔒 Your video never leaves this device.</b><p class="small">The hand tracker runs inside this browser tab. Nothing is uploaded, there is no account, and your diary is stored only in this browser on this device — use “Export” to keep a copy.</p></div>
       <div class="card warnbox"><b>A tracking tool, not a diagnosis.</b><p class="small">For people already living with Parkinson's (or their care partners) who want a record to bring to the clinic. It does not give an MDS-UPDRS score and is a research prototype, not a cleared or approved medical device. ${UNKNOWN_NORMS}</p></div>
     </section>${cta('<button class="primary" data-go="camera-start">Start a test</button>')}`)
@@ -62,8 +62,8 @@ const screens = {
     show(`${steps(2, 3)}<h1>How is your movement right now?</h1><p class="sub">Tagging tests this way lets you compare them later.</p>
       <div class="choices">${opts.map(([v, t, s]) => `<button class="choice" data-med="${v}" aria-pressed="${state.medState === v}"><span>${t}<small>${s}</small></span></button>`).join('')}</div>
       <label class="check"><input type="checkbox" id="first" ${state.beforeFirstDose ? 'checked' : ''}> Before my first dose today</label>
-      <p class="sub" style="margin-top:12px">Time since your last levodopa dose (optional)</p>
-      <div class="row" role="group" aria-label="Time since last dose">${[[30, '30 min'], [60, '1 h'], [120, '2 h'], [180, '3 h'], [240, '4 h'], [360, '6 h+']].map(([v, t]) => `<button class="secondary chipbtn" data-mins="${v}" aria-pressed="${state.minutesSinceDose === v}" ${state.beforeFirstDose ? 'disabled' : ''}>${t}</button>`).join('')}</div>
+      <p class="sub" style="margin-top:12px">Time since your last dose of Parkinson's medicine (optional)</p>
+      <div class="row" role="group" aria-label="Time since last dose">${[[30, '30 min'], [60, '1 h'], [120, '2 h'], [180, '3 h'], [240, '4 h'], [360, '6 h']].map(([v, t]) => `<button class="secondary chipbtn" data-mins="${v}" aria-pressed="${state.minutesSinceDose === v}" ${state.beforeFirstDose ? 'disabled' : ''}>${t}</button>`).join('')}</div>
       <p class="row"><label for="mins" class="note">or minutes</label><input id="mins" type="number" min="0" max="1440" inputmode="numeric" value="${state.minutesSinceDose ?? ''}" ${state.beforeFirstDose ? 'disabled' : ''}></p>
       <p class="note">States adapted from the Hauser home motor diary. “Off” describes how you move, not whether you took a dose — that is the checkbox above.</p>
       ${cta(`<button class="primary" data-go="${state.source === 'file' ? 'file' : 'camera'}" ${state.medState ? '' : 'disabled'}>Next</button>`)}`, keepScroll)
@@ -170,13 +170,13 @@ const screens = {
     const sideWarn = false
     const my = show(`<section class="stack">
       <div><p class="sub">${state.hand === 'left' ? 'Left' : 'Right'} hand · ${esc(MED_LABEL[state.medState] ?? 'Not sure')}${state.sample ? ' · <span class="badge">SAMPLE — synthetic hand</span>' : ''}</p>
-      <div class="big">${m.taps}<small>taps in 10 s</small></div><p class="verdict">${lowFps ? 'Tap count and speed are shown; size is not reliable at this camera speed.' : esc(sizeText(m.decrementPct))}</p>
+      <div class="big">${m.taps}<small>taps in 10 s</small></div><p class="verdict">${lowFps ? 'Tap count and speed are shown; size is not reliable at this camera speed.' : esc(sizeText(m.decrementPct))}</p>${lowFps ? '' : '<p class="note">A single reading can be off by about ±19 points, and strong shrinking tends to be under-read.</p>'}
       <p class="small" ${state.sample ? 'hidden' : ''}>${cmp ? `Compared with your ${cmp.n} earlier tests (same hand and state): <b>${cmp.where}</b> (your usual: ${pct(cmp.lo)} to ${pct(cmp.hi)}).` : 'After 3 tests with the same hand and state, TapTen compares new tests with your own usual range.'}</p></div>
       ${sideWarn ? `<div class="card warnbox"><b>This looks like your ${r.side.label} hand.</b><p class="small">You chose your ${state.hand} hand. If you tapped with the ${r.side.label} hand, switch the label before saving.</p><button class="secondary" id="swap">Label it as ${r.side.label} hand</button></div>` : ''}
       <div id="truth"></div>
       <div class="grid2">
         <div class="stat"><b>${fixed(m.rateHz, 1)}</b><span>taps per second</span></div>
-        <div class="stat"><b>${lowFps ? '—' : pct(m.decrementPct)}</b><span>size change over 10 s (first 3 → last 3 taps)${!lowFps && m.decrement10Pct !== null ? ` · within the first 10 taps: ${pct(m.decrement10Pct)}` : ''}</span></div>
+        <div class="stat"><b>${lowFps ? '—' : pct(m.decrementPct)}</b><span>size change over 10 s (first 3 → last 3 taps)</span></div>
         <div class="stat"><b style="font-size:22px">${speed}</b><span>speed, first 3 → last 3 gaps</span></div>
         <div class="stat"><b>${m.hesitations}</b><span>pauses (gaps over twice the usual)</span></div>
       </div>
@@ -185,7 +185,7 @@ const screens = {
       <div class="card warnbox"><p class="small"><b>${esc(SAFETY)}</b> ${esc(UNKNOWN_NORMS)} <span id="err">Accuracy on real hands is not yet known.</span></p></div>
       <details><summary>Details and how this was measured</summary>
         <table><tbody>
-        <tr><th>Size change within the first 10 taps (clinic-style)</th><td>${pct(m.decrement10Pct)}</td></tr>
+        <tr><th>Size change within the first 10 taps (closer to the clinic's 10-tap rating)</th><td>${lowFps ? '—' : pct(m.decrement10Pct)}</td></tr>
         <tr><th>Size trend per tap (all taps)</th><td>${fixed(m.slopePctPerTap, 1)}%</td></tr>
         <tr><th>Typical tap size (swing, % of palm length)</th><td>${m.amplitude === null ? '—' : Math.round(m.amplitude * 100) + '%'} <span class="note">— depends on hand angle; compare tests taken the same way</span></td></tr>
         <tr><th>Rhythm unevenness (spread of gaps)</th><td>${fixed(m.rhythmCv, 2)}</td></tr>
@@ -207,7 +207,9 @@ const screens = {
       return
     }
     document.getElementById('swap')?.addEventListener('click', () => { state.hand = r.side.label; screens.result() })
-    const save = () => diary.add({ hand: state.hand ?? 'right', medState: state.medState ?? 'unsure', minutesSinceDose: state.beforeFirstDose ? null : state.minutesSinceDose, beforeFirstDose: state.beforeFirstDose, metrics: m, quality: q, note: state.source === 'file' ? `video: ${state.fileName}` : '' })
+    // size is not stored when the camera ran below 24 fps (not reliable), so it never enters trends, medians or comparisons
+    const stored = lowFps ? { ...m, decrementPct: null, decrement10Pct: null, slopePctPerTap: null, amplitude: null } : m
+    const save = () => diary.add({ hand: state.hand ?? 'right', medState: state.medState ?? 'unsure', minutesSinceDose: state.beforeFirstDose ? null : state.minutesSinceDose, beforeFirstDose: state.beforeFirstDose, metrics: stored, quality: q, note: state.source === 'file' ? `video file (frame rate not verified): ${state.fileName}` : '' })
     document.getElementById('save').onclick = () => { save(); go('diary') }
     document.getElementById('other').onclick = () => { save(); state.hand = other; go(state.source === 'file' ? 'file' : 'camera') }
   },
@@ -247,10 +249,10 @@ const screens = {
       <p class="small">${esc(fmtDay(sh.from))} to ${esc(fmtDay(sh.to))} · ${sh.total} tests · printed ${esc(fmtDay(sh.generatedAt))}</p>
       <table><thead><tr><th>Hand</th><th>Medication</th><th>Tests</th><th>Taps/s</th><th>Size change</th><th>Rhythm unevenness*</th></tr></thead><tbody>
       ${sh.groups.map((g) => `<tr><td>${g.hand === 'left' ? 'Left' : 'Right'}</td><td>${esc(g.medLabel)}${g.medState === 'on-dyskinesia' ? ' †' : ''}</td><td>${g.n}${g.n < 5 ? ' (few)' : ''}</td><td>${fixed(g.rateHz, 1)}</td><td>${pct(g.decrementPct)}</td><td>${fixed(g.rhythmCv, 2)}</td></tr>`).join('')}
-      </tbody></table><p class="small">Medians per group. Size change = mean size of the last 3 taps vs the first 3 taps in a 10-second test. *Rhythm unevenness = how much the gaps between taps vary (standard deviation ÷ mean); 0 is perfectly even. “(few)” = fewer than 5 tests: treat the median with caution. † Dyskinesia can disturb the measurement.</p><p class="small" id="err2"></p>
+      </tbody></table><p class="small">Medians per group. Size change = mean size of the last 3 taps vs the first 3 taps in a 10-second test; strong shrinking tends to be under-read. *Rhythm unevenness = how much the gaps between taps vary (standard deviation ÷ mean); 0 is perfectly even. “(few)” = fewer than 5 tests: treat the median with caution. † Dyskinesia can disturb the measurement.</p><p class="small" id="err2"></p>
       ${medLegend()}<p class="small" style="margin:8px 0 0"><b>Taps per second, by date</b></p>${trendSvg(s, 'rateHz', { label: 'Taps per second', h: 110 })}<p class="small" style="margin:8px 0 0"><b>Taps per second, by minutes since last dose</b></p>${doseScatterSvg(sh.doseTime, { h: 120 })}
       <table><thead><tr><th>Date · time</th><th>Hand</th><th>Medication</th><th>Min. since dose</th><th>Taps/s</th><th>Size Δ</th></tr></thead><tbody>
-      ${sh.rows.slice(-8).map((x) => `<tr><td>${esc(fmtWhen(x.at))}</td><td>${x.hand === 'left' ? 'L' : 'R'}</td><td>${esc(x.medLabel)}${x.beforeFirstDose ? ' · before 1st dose' : ''}</td><td>${x.minutesSinceDose ?? '—'}</td><td>${fixed(x.rateHz, 1)}</td><td>${pct(x.decrementPct)}</td></tr>`).join('')}
+      ${sh.rows.slice(-8).map((x) => `<tr><td>${esc(fmtWhen(x.at))}</td><td>${x.hand === 'left' ? 'L' : 'R'}</td><td>${esc(x.medLabel)}${x.beforeFirstDose ? ' · before 1st dose' : ''}</td><td>${x.minutesSinceDose === null ? '—' : x.minutesSinceDose >= 360 ? '6 h+' : x.minutesSinceDose}</td><td>${fixed(x.rateHz, 1)}</td><td>${pct(x.decrementPct)}</td></tr>`).join('')}
       </tbody></table><p class="small">Last ${Math.min(8, sh.rows.length)} tests shown; times are local.</p>
       <p class="small"><b>${esc(sh.disclaimer)}</b> Recorded with TapTen (open source). Method: MediaPipe hand landmarks, thumb–index 3D distance ÷ palm length.</p></article>
       ${cta('<button class="primary" id="print">Print or save as PDF</button><button class="secondary" data-go="diary">Back</button>')}`)
