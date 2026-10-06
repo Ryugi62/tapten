@@ -1,13 +1,16 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { sizeVerdict } from '../src/domain/verdict.js'
+import { sizeText, compareWithOwn } from '../src/domain/verdict.js'
 
-test('size verdict bands sit outside the benchmark error: only ≤ −25 % is "clearly smaller"', () => {
-  assert.equal(sizeVerdict(-40).level, 'clear')
-  assert.equal(sizeVerdict(-25).level, 'clear')
-  assert.equal(sizeVerdict(-18).level, 'possible')
-  assert.equal(sizeVerdict(-10).level, 'none')
-  assert.equal(sizeVerdict(17).level, 'none')
-  assert.equal(sizeVerdict(null).level, 'unknown')
-  assert.match(sizeVerdict(-18).text, /may have/)
+test('a single test is described neutrally (no "clearly smaller")', () => {
+  assert.equal(sizeText(-40), 'Tap size changed by -40% from the first to the last taps.')
+  assert.doesNotMatch(sizeText(-40), /clearly|abnormal|worse/)
+  assert.match(sizeText(null), /Not enough/)
+})
+
+test('comparison with own earlier tests needs at least 3 of them', () => {
+  const s = (d) => ({ metrics: { decrementPct: d } })
+  assert.equal(compareWithOwn(-30, [s(-10), s(-12)]), null)
+  const c = compareWithOwn(-30, [s(-10), s(-12), s(-14)])
+  assert.equal(c.n, 3); assert.equal(c.median, -12); assert.equal(c.diff, -18)
 })

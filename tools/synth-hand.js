@@ -87,11 +87,12 @@ export async function createSynthHand(canvas, { width = 640, height = 480, skin 
 }
 
 /** Tap schedule → closure(t). amp(t) shrinks linearly by `decrement` over `duration`; optional pause; small rhythm jitter. */
-export function schedule({ f = 3, a0 = 0.9, decrement = 0, duration = 10, pause = null, jitter = 0.03, seed = 1, tremor = 0 }) {
+export function schedule({ f = 3, fEnd = null, a0 = 0.9, decrement = 0, duration = 10, pause = null, jitter = 0.03, seed = 1, tremor = 0 }) {
   let s = seed >>> 0; const r = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 32)
   // build cycle boundaries with jittered periods
   const cycles = []; let t = 0
-  while (t < duration + 1) { const T = (1 / f) * (1 + jitter * (r() * 2 - 1)); cycles.push({ start: t, T }); t += T }
+  const fAt = (tt) => (fEnd === null ? f : f + (fEnd - f) * Math.min(1, tt / duration)) // optional slowing
+  while (t < duration + 1) { const T = (1 / fAt(t)) * (1 + jitter * (r() * 2 - 1)); cycles.push({ start: t, T }); t += T }
   const shift = (tt) => (pause && tt >= pause.at ? (tt >= pause.at + pause.len ? tt - pause.len : null) : tt)
   const ampAt = (tt) => a0 * (1 - decrement * Math.min(1, tt / duration))
   function closure(tt) {

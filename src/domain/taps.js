@@ -54,12 +54,21 @@ export function detectTaps(series, { minAbsSwing = 0.12, relSwing = 0.25, minInt
       taps.push({ tOpen: ex[i - 1].t, tClose: ex[i].t, peak: ex[i - 1].a, trough: ex[i].a, amplitude: amp })
     }
   }
-  // A real tap is never tiny next to its neighbours in the same 10 s: drop swings below 35 % of the median tap
-  // (catches glitch bumps inside a closed or open hold; a 60 % decrement still keeps the last taps at ≈ 57 % of median).
+  // Glitch filter: a landmark glitch inside an open or closed hold shows up as a TINY swing that also BREAKS THE
+  // RHYTHM (it lands much sooner than the usual gap). Real small taps late in a strong decrement keep the rhythm,
+  // so they are kept even when they are tiny (severe decrement is the clinical signal).
+  let ignored = 0
   if (taps.length >= 5) {
     const m = median(taps.map((t) => t.amplitude))
-    for (let i = taps.length - 1; i >= 0; i--) if (taps[i].amplitude < 0.35 * m) taps.splice(i, 1)
+    const gaps = taps.slice(1).map((t, i) => t.tClose - taps[i].tClose)
+    const g = median(gaps)
+    for (let i = taps.length - 1; i >= 0; i--) {
+      const before = i > 0 ? taps[i].tClose - taps[i - 1].tClose : Infinity
+      const after = i < taps.length - 1 ? taps[i + 1].tClose - taps[i].tClose : Infinity
+      if (taps[i].amplitude < 0.35 * m && Math.min(before, after) < 0.6 * g) { taps.splice(i, 1); ignored++ }
+    }
   }
+  taps.ignored = ignored
   for (let i = 0; i < taps.length; i++) taps[i].interval = i === 0 ? null : taps[i].tClose - taps[i - 1].tClose
   return taps
 }

@@ -16,10 +16,11 @@ const linSlope = (ys) => {
  * - decrementPct: mean(last 3 amplitudes) vs mean(first 3), in % (negative = shrinking)
  * - slopePctPerTap: linear trend of amplitude per tap relative to the first-3 mean
  * - hesitations: intervals longer than 2 × median interval
+ * - decrement10Pct: size change within the first 10 taps · speedChangePct: rate over last 3 vs first 3 gaps
  */
 export function computeMetrics(taps, duration) {
   const n = taps.length
-  const empty = { taps: n, rateHz: n / duration, amplitude: null, amplitudeCv: null, rhythmCv: null, decrementPct: null, slopePctPerTap: null, hesitations: 0 }
+  const empty = { taps: n, rateHz: n / duration, amplitude: null, amplitudeCv: null, rhythmCv: null, decrementPct: null, decrement10Pct: null, speedChangePct: null, slopePctPerTap: null, hesitations: 0, ignored: taps.ignored ?? 0 }
   if (n < 4) return empty
   const amps = taps.map((t) => t.amplitude)
   const ints = taps.slice(1).map((t) => t.interval)
@@ -32,6 +33,11 @@ export function computeMetrics(taps, duration) {
     amplitudeCv: sd(amps) / mean(amps),
     rhythmCv: sd(ints) / mean(ints),
     decrementPct: ((last - first) / first) * 100,
+    // clinic-style: the first 10 taps only (taps 8–10 vs 1–3), comparable across tapping speeds
+    decrement10Pct: n >= 10 ? ((mean(amps.slice(7, 10)) - first) / first) * 100 : null,
+    // slowing: tap rate over the last 3 gaps vs the first 3 gaps (negative = slower)
+    speedChangePct: ints.length >= 6 ? ((mean(ints.slice(0, 3)) / mean(ints.slice(-3)) - 1) * 100) : null,
+    ignored: taps.ignored ?? 0,
     slopePctPerTap: (linSlope(amps) / first) * 100,
     hesitations: ints.filter((x) => x > 2 * medInt).length,
   }

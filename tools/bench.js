@@ -35,7 +35,15 @@ export function clipSpecs() {
     { id: 'n05', f: 3, decrement: 0.2, view: views[1], dist: 2.4, seed: 904, fps: 30 },
     { id: 'n06', f: 2, decrement: 0, view: views[2], dist: 2.4, seed: 905, fps: 30 },
   ].map((c) => ({ pause: null, degrade: false, tremor: 0, dropRate: 0, ...c, expectReject: true }))
-  return [...clean, ...hard, ...hold, ...neg]
+  // HOLD-OUT 2 (pre-registered in its own commit before running, 2026-10-06 15:3x, after the rhythm-aware glitch fix):
+  // the hard clinical cases round-2 reviewers asked for — severe decrement 70–90 %, slowing taps, < 1 tap/s, small taps from the start.
+  const k = [
+    ...[0.7, 0.8, 0.9].flatMap((dec, i) => [0, 1].map((j) => ({ f: [2, 3, 1.5][i], decrement: dec, view: views[(i + j) % 3], dist: 0.5, a0: 0.9 }))),
+    ...[[3, 1.5], [2.5, 1.2], [4, 2]].flatMap(([f, fEnd], i) => [0, 1].map((j) => ({ f, fEnd, decrement: 0.3 * j, view: views[(i + j + 1) % 3], dist: 0.55, a0: 0.9 }))),
+    ...[0.7, 0.8].flatMap((f, i) => [0, 1].map((j) => ({ f, decrement: 0.3 * j, view: views[(i + j) % 3], dist: 0.5, a0: 0.9 }))),
+    ...[0.35, 0.45].flatMap((a0, i) => [0, 1].map((j) => ({ f: 2.5, decrement: 0.4 * j, view: views[(i + j + 2) % 3], dist: 0.5, a0 }))),
+  ].map((c, i) => ({ id: `k${String(i + 1).padStart(2, '0')}`, pause: null, seed: 700 + i, fps: 30, degrade: i % 4 === 3, tremor: 0, fEnd: null, ...c }))
+  return [...clean, ...hard, ...hold, ...neg, ...k]
 }
 
 function degrader(src) {
@@ -58,7 +66,7 @@ export async function runClip(hand, schedule, makeLandmarker, spec, { duration =
   const lmk = await makeLandmarker('VIDEO')
   const degrade = spec.degrade ? degrader(hand.canvas) : null
   hand.setView({ ...spec.view, dist: spec.dist })
-  const sch = schedule({ f: spec.f, a0: 0.9, decrement: spec.decrement, duration, pause: spec.pause, jitter: 0.04, seed: spec.seed, tremor: spec.tremor ?? 0 })
+  const sch = schedule({ f: spec.f, fEnd: spec.fEnd ?? null, a0: spec.a0 ?? 0.9, decrement: spec.decrement, duration, pause: spec.pause, jitter: 0.04, seed: spec.seed, tremor: spec.tremor ?? 0 })
   let ds = spec.seed * 7919 >>> 0; const dr = () => ((ds = (ds * 1664525 + 1013904223) >>> 0) / 2 ** 32)
   const frames = []
   for (let i = 0; i <= fps * duration; i++) {

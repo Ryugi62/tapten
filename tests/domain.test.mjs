@@ -95,8 +95,8 @@ test('computeMetrics with < 4 taps returns nulls (no fake precision)', () => {
 })
 
 test('detectTaps on an empty / flat series returns []', () => {
-  assert.deepEqual(detectTaps([]), [])
-  assert.deepEqual(detectTaps(Array.from({ length: 50 }, (_, i) => ({ t: i / 30, a: 0.5 }))), [])
+  assert.equal(detectTaps([]).length, 0)
+  assert.equal(detectTaps(Array.from({ length: 50 }, (_, i) => ({ t: i / 30, a: 0.5 }))).length, 0)
 })
 
 test('a tap cut in half by the end of the recording is not counted', () => {
@@ -121,4 +121,26 @@ test('a strong 60 % decrement keeps its small late taps', () => {
   const fn = (t) => 0.05 + 0.8 * (1 - 0.6 * (t / 10)) * (1 + Math.cos(2 * Math.PI * 3 * t)) / 2
   const { metrics } = analyzeFrames(framesFromAperture(fn))
   assert.ok(Math.abs(metrics.taps - 30) <= 1, `taps ${metrics.taps}`)
+})
+
+test('severe 85 % decrement: the tiny late taps are KEPT (they keep the rhythm)', () => {
+  const fn = (t) => 0.05 + 0.9 * (1 - 0.85 * (t / 10)) * (1 + Math.cos(2 * Math.PI * 2 * t)) / 2
+  const { metrics } = analyzeFrames(framesFromAperture(fn))
+  assert.ok(Math.abs(metrics.taps - 20) <= 1, `taps ${metrics.taps}`)
+  assert.ok(metrics.decrementPct < -60, `decrement ${metrics.decrementPct}`)
+})
+
+test('slowing taps (3 → 1.5 taps/s) give a negative speed change; steady taps ≈ 0', () => {
+  // phase with linearly falling frequency: f(t) = 3 − 0.15 t
+  const slow = (t) => 0.05 + 0.6 * (1 + Math.cos(2 * Math.PI * (3 * t - 0.075 * t * t))) / 2
+  const a = analyzeFrames(framesFromAperture(slow)).metrics
+  assert.ok(a.speedChangePct < -25, `speed ${a.speedChangePct}`)
+  const b = analyzeFrames(framesFromAperture(sine(3))).metrics
+  assert.ok(Math.abs(b.speedChangePct) < 8, `speed ${b.speedChangePct}`)
+})
+
+test('decrement over the first 10 taps is reported alongside the 10-second figure', () => {
+  const fn = (t) => 0.05 + 0.8 * (1 - 0.4 * (t / 10)) * (1 + Math.cos(2 * Math.PI * 3 * t)) / 2
+  const { metrics } = analyzeFrames(framesFromAperture(fn))
+  assert.ok(metrics.decrement10Pct < -5 && metrics.decrement10Pct > metrics.decrementPct, `${metrics.decrement10Pct} vs ${metrics.decrementPct}`)
 })
