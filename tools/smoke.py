@@ -35,7 +35,7 @@ async def main():
                 if w == 390 and len(sys.argv) > 1:
                     await pg.goto('http://127.0.0.1:4404/index.html#hand')
                     await pg.screenshot(path=f'{SHOTS}/step-hand-{w}.png')
-                    await pg.click('[data-hand=right]'); await pg.click('[data-go=med]')
+                    await pg.click('[data-hand=right]'); await pg.wait_for_selector('[data-med]')
                     await pg.click('[data-med=unsure]'); await pg.screenshot(path=f'{SHOTS}/step-med-{w}.png'); await pg.click('[data-go=camera]')
                     await pg.wait_for_selector('#go:not([disabled])', timeout=120000)
                     await pg.screenshot(path=f'{SHOTS}/camera-ready-{w}.png')

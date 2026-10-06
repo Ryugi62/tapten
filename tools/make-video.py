@@ -8,6 +8,7 @@ FF = os.environ.get('FFMPEG', 'ffmpeg')
 out, f, dec, secs = sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4])
 view = dict(zip(['rx', 'ry', 'rz', 'dist'], map(float, sys.argv[5:9]))) if len(sys.argv) > 8 and not sys.argv[5].startswith('--') else {'rx': -1.57, 'ry': -1.57, 'rz': 1.57, 'dist': 0.45}
 y4m = '--y4m' in sys.argv
+DELAY = float(sys.argv[sys.argv.index('--delay') + 1]) if '--delay' in sys.argv else 0.0  # hold full-size taps first, then shrink
 async def main():
     tmp = os.path.join(os.environ.get('TMPDIR', '/tmp'), f'tapten-frames-{os.path.basename(out)}')
     os.makedirs(tmp, exist_ok=True)
@@ -20,7 +21,7 @@ async def main():
             await pg.wait_for_function('window.ready===true', timeout=90000)
             n = int(secs * 30) + 1
             for i in range(n):
-                data = await pg.evaluate('([i,f,dec,v,secs])=>{const h=window.hand; if(i===0){h.setView(v); window._s=window.schedule({f,a0:0.9,decrement:dec,duration:secs,jitter:0.04,seed:5});} h.pose(window._s.closure(i/30)); h.render(); return h.canvas.toDataURL("image/png")}', [i, f, dec, view, secs])
+                data = await pg.evaluate('([i,f,dec,v,secs,delay])=>{const h=window.hand; if(i===0){h.setView(v); window._s=window.schedule({f,a0:0.9,decrement:dec,duration:secs-delay,jitter:0.04,seed:5}); window._k=window.schedule({f,a0:0.9,decrement:0,duration:secs,jitter:0.04,seed:6});} const t=i/30; h.pose(t<delay?window._k.closure(t):window._s.closure(t-delay)); h.render(); return h.canvas.toDataURL("image/png")}', [i, f, dec, view, secs, DELAY])
                 open(f'{tmp}/{i:05d}.png', 'wb').write(base64.b64decode(data.split(',')[1]))
             await b.close()
     finally:

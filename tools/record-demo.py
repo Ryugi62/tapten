@@ -60,9 +60,10 @@ async def main():
                 left = secs[sid] + 0.5 + extra - (time.time() - t0 - starts[sid])
                 if left > 0: await asyncio.sleep(left)
             text = dict(SCENES)
-            LIFT = "(()=>{const st=document.createElement('style');st.textContent='main{zoom:1.3}.cta{bottom:86px!important;background:none!important}.cta .inner{max-width:900px}main{padding-bottom:320px!important}';document.head.appendChild(st)})()"
+            LIFT = "(()=>{if(document.getElementById('cd-lift'))return;const st=document.createElement('style');st.id='cd-lift';st.textContent='main{zoom:1.25;padding-bottom:0!important}.cta{position:static!important;background:none!important;padding:8px 0 120px!important}';document.head.appendChild(st)})()"
             async def app(hash):
                 await pg.goto(APP + '#home'); await pg.goto(APP + '#' + hash); await pg.evaluate(LIFT)
+                await pg.evaluate("document.getElementById('cd-badge')?.remove()")
             await pg.goto(f'{SL}#problem'); await pg.wait_for_timeout(300); await cap('problem', text['problem']); await hold('problem')
             await pg.goto(APP); await pg.evaluate("localStorage.clear()"); await app('hand'); await cap('steps', text['steps'])
             await pg.wait_for_timeout(1500); await pg.click('[data-hand=right]'); await pg.wait_for_timeout(300); await pg.evaluate(LIFT)

@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><meta charset="utf-8"><title>TapTen — one-page project description</title>
 <style>
 @page{size:A4;margin:10mm 12mm}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#191f28;font-size:9.3pt;line-height:1.36;margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#191f28;font-size:8.9pt;line-height:1.33;margin:0}
 h1{font-size:18pt;margin:0;letter-spacing:-.02em}h1 span{color:#3182f6}
 .tag{font-size:11pt;color:#4e5968;margin:2px 0 8px}
 h2{font-size:10.8pt;margin:7px 0 3px;color:#191f28;border-bottom:1.5px solid #e5e8eb;padding-bottom:2px}
@@ -25,10 +25,10 @@ code{font-size:9pt;background:#f2f4f6;padding:0 4px;border-radius:4px}
 <li><b>Private diary</b> (export/import) and a <b>one-page clinic sheet</b> with medians per state and taps vs minutes since dose. Never says what to do with medication.</li></ul>
 <h2>How it works</h2>
 <p><b>AI part:</b> Google MediaPipe Hand Landmarker (pre-trained, Apache-2.0) finds 21 3D hand points per frame inside the browser — we trained no model. <b>Our part:</b> opening = thumb-tip↔index-tip distance ÷ palm length → robust tap detection → speed, size change, pauses; a quality gate; and a benchmark with exact answers.</p>
-<img src="shots/sample-truth.png" alt="Sample result with the true answer" style="width:100%;height:170px;object-fit:cover;object-position:top;border:1px solid #e5e8eb;border-radius:8px;margin-top:4px">
+<img src="shots/sample-truth.png" alt="Sample result with the true answer" style="width:100%;height:150px;object-fit:cover;object-position:top;border:1px solid #e5e8eb;border-radius:8px;margin-top:4px">
 </div><div>
 <h2>Is it accurate? A ground-truth benchmark</h2>
-<p>No patient videos yet (that needs ethics approval). So a rigged 3D hand is animated with a <b>known</b> tap schedule — 1–5 taps/s, shrinking 0–60 %, pauses, tremor, several views and distances, blur/dim/noise/15 fps — and run through the <b>same model and analysis code</b>. A held-out set was frozen and run once.</p>
+<p>No patient videos yet (that needs ethics approval). So a rigged 3D hand is animated with a <b>known</b> tap schedule — 0.7–5 taps/s, shrinking 0–90 %, slowing, pauses, tremor, several views and distances, blur/dim/noise/15 fps — and run through the <b>same model and analysis code</b>. Two held-out sets were frozen before running (the second pre-registered in its own commit).</p>
 <div class="nums" id="nums"></div>
 <p id="bfoot" style="font-size:8.8pt;color:#4e5968"></p>
 <h2>Privacy, enforced in code</h2>
@@ -43,5 +43,5 @@ code{font-size:9pt;background:#f2f4f6;padding:0 4px;border-radius:4px}
 <script>
 fetch('bench-summary.json').then(r=>r.json()).then(b=>{
 document.getElementById('nums').innerHTML=`<div class="n"><b>${b.cleanExact}/${b.cleanClips}</b><span>clean: exact tap count</span></div><div class="n"><b>${b.holdoutExact}/${b.holdoutClips}</b><span>held-out 1: exact</span></div><div class="n"><b>${b.holdout2Exact}/${b.holdout2Clips}</b><span>held-out 2 (severe, slowing): exact</span></div><div class="n"><b>${b.negativeRejected}</b><span>bad recordings refused</span></div>`
-document.getElementById('bfoot').textContent=`Exact count overall ${b.allExact}/${b.positiveClips} (${b.allExactPct} %; our own target was 90 % — ${b.s1Pass?'met':'not met'}). Degraded exact ${b.hardExact}/${b.hardClips}. Size change vs truth: bias ${b.decBias} pts, 95 % limits ±${b.decLoa} pts (bias differs by viewpoint, so single tests are not interpreted); severe-decrement error ${b.severeDecMedianErr} pts; slowing flagged ${b.slowingDetected}. Every clip, misses included: docs/bench-table.md.`;document.body.dataset.ready='1'})
+document.getElementById('bfoot').textContent=`Exact count overall ${b.allExact}/${b.positiveClips} (${b.allExactPct} %; our own target was 90 % — ${b.s1Pass?'met':'not met'}). Degraded exact ${b.hardExact}/${b.hardClips}. Size change vs truth: bias ${b.decBias} pts, 95 % limits ±${b.decLoa} pts (single-test errors are wide, so single tests are not interpreted); severe-decrement error ${b.severeDecMedianErr} pts; slowing flagged ${b.slowingDetected}. Every clip, misses included: docs/bench-table.md.`;document.body.dataset.ready='1'})
 </script></html>
