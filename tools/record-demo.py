@@ -15,10 +15,10 @@ APP = 'http://127.0.0.1:4410/index.html'
 SL = 'http://127.0.0.1:4410/docs/video/slides.html'
 
 SCENES = [
-    ('problem', "People with Parkinson's see their neurologist every few months. In between, how they moved when the medication wore off is answered from memory. Doctors watch ten fast finger taps get slower and smaller. A phone screen-tap test cannot see how wide the fingers open. A webcam can."),
-    ('steps', "TapTen runs that test privately in the browser. Pick the hand, then the medication state and time since the last dose, each with a single tap."),
+    ('problem', "Between neurology visits, people with Parkinson's describe their bad hours from memory. Doctors watch ten finger taps get slower and smaller. A webcam can measure that at home."),
+    ('steps', "TapTen runs privately in the browser. Pick the hand, then how you move right now and the time since your last dose, each with a single tap."),
     ('camera', "In this video the camera sees a synthetic 3D hand, so no real person is filmed. When the hand is in view and still, the test starts by itself, with beeps: five seconds to get ready, then ten seconds of tapping."),
-    ('result', "Numbers first: taps in ten seconds, the size change from the first to the last taps, and the speed change. One test is described neutrally, because a single test can be off. After three tests, TapTen compares each new one with your own usual."),
+    ('result', "Numbers first: taps in ten seconds, how much smaller they got, and the speed change, in plain words. One test can be off, so after three tests TapTen compares each new one with your own usual range."),
     ('gate', "If a recording cannot support numbers, the quality gate refuses it and says what to fix. Here, a five-second clip is too short."),
     ('sample', "No webcam? The sample runs the same pipeline on a synthetic clip with a known answer, so you can check the measurement yourself."),
     ('diary', "Tests build a private diary. This is clearly labelled example data: taps per second against time since the last dose."),
@@ -48,6 +48,7 @@ BADGE_JS = """(t)=>{let c=document.getElementById('cd-badge');if(!c){c=document.
 async def main():
     srv = subprocess.Popen([sys.executable, '-m', 'http.server', '4410', '--bind', '127.0.0.1'], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     starts = {}
+    cuts = []  # (from, to) seconds of dead waiting to remove from the final video
     try:
         async with async_playwright() as p:
             b = await p.chromium.launch(args=['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', f'--use-file-for-fake-video-capture={CAM}'])
@@ -76,10 +77,16 @@ async def main():
             await cap('result', text['result'])
             await pg.wait_for_timeout(int(secs['result'] * 500)); await pg.evaluate("window.scrollTo({top:560,behavior:'smooth'})")
             await hold('result')
-            await app('file'); await cap('gate', text['gate'])
-            await pg.set_input_files('#f', SHORT); await pg.wait_for_selector('.nobox', timeout=60000); await pg.evaluate(LIFT); await hold('gate')
-            await app('sample'); await cap('sample', text['sample'])
-            await pg.wait_for_selector('.truth', timeout=120000); await pg.evaluate(LIFT); await pg.wait_for_timeout(2500); await hold('sample')
+            await app('file'); await pg.wait_for_timeout(300)
+            c0 = time.time() - t0 + 1.0
+            await pg.set_input_files('#f', SHORT); await pg.wait_for_selector('.nobox', timeout=60000); await pg.evaluate(LIFT)
+            cuts.append((c0, time.time() - t0 - 0.3))
+            await cap('gate', text['gate']); await hold('gate', 1.0)
+            await app('sample'); await pg.wait_for_timeout(1500)
+            c0 = time.time() - t0
+            await pg.wait_for_selector('.truth', timeout=120000); await pg.evaluate(LIFT); await pg.evaluate("document.querySelector('.truth').scrollIntoView({block:'center'})")
+            cuts.append((c0, time.time() - t0 - 0.3))
+            await cap('sample', text['sample']); await hold('sample', 1.5)
             await pg.evaluate("localStorage.clear()"); await app('diary'); await pg.wait_for_timeout(400); await pg.click('#demo'); await pg.wait_for_timeout(600); await pg.evaluate(LIFT)
             await cap('diary', text['diary']); await pg.evaluate("window.scrollTo({top:900,behavior:'smooth'})"); await hold('diary')
             await app('sheet'); await pg.wait_for_timeout(400); await cap('sheet', text['sheet']); await pg.wait_for_timeout(int(secs['sheet'] * 500)); await pg.evaluate("window.scrollTo({top:500,behavior:'smooth'})"); await hold('sheet')
@@ -92,6 +99,16 @@ async def main():
     finally:
         srv.terminate()
     json.dump({'starts': starts, 'secs': secs, 'total': total}, open(os.path.join(WORK, 'timeline.json'), 'w'), indent=1)
+    # 1b) remove dead waiting (analysis progress bars); shift narration starts accordingly
+    def shifted(t):
+        return t - sum(max(0.0, min(t, b) - a) for a, b in cuts)
+    if cuts:
+        sel = '+'.join(f'between(t,{a:.2f},{b:.2f})' for a, b in cuts)
+        trimmed = os.path.join(WORK, 'trimmed.webm')
+        subprocess.run([FF, '-y', '-loglevel', 'error', '-i', raw, '-vf', f"select='not({sel})',setpts=N/FRAME_RATE/TB", '-an', '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '24', '-row-mt', '1', trimmed], check=True)
+        raw = trimmed
+        starts = {k: shifted(v) for k, v in starts.items()}
+        total = shifted(total)
     # 2) audio track: each narration placed at its scene start
     inputs, filt = [], []
     for i, (sid, _) in enumerate(SCENES):

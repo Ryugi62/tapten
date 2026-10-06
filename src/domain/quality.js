@@ -24,7 +24,7 @@ export function assessQuality(frames, rules = QUALITY_RULES) {
 
 export const REASON_TEXT = {
   'too-short': 'The recording was shorter than 9 seconds. Keep tapping until the timer ends.',
-  'low-fps': 'The camera delivered too few frames per second. Close other apps or use better light.',
+  'low-fps': 'Too few frames per second were processed (this computer or camera may be slow). Close other apps and tabs, plug in the laptop, and try again in good light.',
   'hand-lost': 'Your hand left the camera view too often. Keep thumb and index finger inside the box.',
   'hand-too-small': 'Your hand is too far from the camera. Move it closer until it fills the box.',
 }

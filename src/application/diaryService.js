@@ -28,6 +28,7 @@ export function createDiaryService(store, { newId = () => Math.random().toString
     wipe() { store.save([]) },
     exportJson: () => JSON.stringify({ app: 'TapTen', version: 1, sessions: store.load() }, null, 2),
     sheet: () => buildClinicSheet(store.load(), { now: clock() }),
+    sheetOf: (sessions) => buildClinicSheet(sessions, { now: clock() }),
   }
 }
 

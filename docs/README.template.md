@@ -9,9 +9,9 @@ TapTen runs that test from an ordinary webcam, inside the browser tab:
 
 - **Numbers first** — taps in 10 s, taps per second, **size change from the first 3 to the last 3 taps**, **speed change** (first 3 vs last 3 gaps), pauses, a bar for every tap; the first-10-tap (clinic-style) size change in Details. One test is described neutrally and compared with your own usual after 3 tests.
 - **Quality gate** — no numbers when the hand was lost (> 15 % of frames), the camera was too slow (< 15 fps), the hand was too small, or the test was too short.
-- **Built for shaky hands** — starts by itself when the hand is steady (no button), 5-second countdown with beeps, a looping example of the movement.
+- **No clicking needed** — starts by itself when the hand is in view and still for 2 s (the Start button works whenever the hand is in view), 5-second countdown with beeps, a looping example of the movement.
 - **Private motor diary** — tests tagged with states adapted from the Hauser home motor diary (on / on with troublesome dyskinesia / off / not sure), "before first dose", minutes since last dose; export and import; a **one-page clinic sheet** with medians per state and a taps-vs-minutes-since-dose chart.
-- **No webcam?** "Try a sample recording" runs the whole pipeline on a synthetic-hand clip and shows the **true answer** next to the measured one. Any video file can be analysed too.
+- **No webcam?** "Try a sample recording" runs the whole pipeline on a synthetic-hand clip and shows the **true answer** next to the measured one. A video file can be analysed too (its original frame rate cannot be checked, so record at 30 fps).
 
 > Not a diagnosis, not an MDS-UPDRS score. A research prototype — not cleared or approved as a medical device. Normal ranges for this home test are not known. Do not change medication based on it. Accuracy below is measured on a synthetic hand, not on people.
 
@@ -30,12 +30,13 @@ We have no patient videos (that needs ethics approval), so we built a benchmark 
 |---|---|---|---|
 | clean (1.5–4.5 taps/s, shrink 0–60 %, pauses, 3 views, 2 distances) | {{cleanClips}} | {{cleanExact}} | {{cleanWithin1}} |
 | degraded (blur, dim light, low contrast, sensor noise; half at 15 fps; up to 0.75 m) | {{hardClips}} | {{hardExact}} | {{hardWithin1}} |
-| **held-out** (frozen before running, run once: new seeds, perturbed views, 1–5 taps/s, some degraded / 15 fps) | {{holdoutClips}} | {{holdoutExact}} | {{holdoutWithin1}} |
+| **held-out 1** (in-distribution: new seeds, perturbed views, 1–5 taps/s, some degraded / 15 fps; first run 21/24 on earlier code, same result after later fixes) | {{holdoutClips}} | {{holdoutExact}} | {{holdoutWithin1}} |
 | of which: 5 Hz finger tremor on top of the taps | {{tremorClips}} | {{tremorExact}} | — |
-| **held-out 2** (pre-registered in commit `63a4d16` before running: severe 70–90 % decrement, slowing taps, 0.7–0.8 taps/s, small taps from the start) | {{holdout2Clips}} | {{holdout2Exact}} | {{holdout2Within1}} |
+| **held-out 2** (in-distribution, pre-registered in commit `63a4d16` — pushed and CI-run before the first benchmark run: severe 70–90 % decrement, slowing taps, 0.7–0.8 taps/s, small taps from the start) | {{holdout2Clips}} | {{holdout2Exact}} | {{holdout2Within1}} |
 
-- **SPEC S1** (exact count on ≥ {{s1Target}} % of clips): {{allExact}}/{{positiveClips}} = {{allExactPct}} % → **{{s1Status}}**. Count error averages {{countMae}} taps.
+- **SPEC S1** (exact count on ≥ {{s1Target}} % of clips): {{allExact}}/{{positiveClips}} = {{allExactPct}} % → **{{s1Status}}**. Misses: 15-fps degraded clips, tiny fast late taps in severe decrement, tremor on top of taps. Count error averages {{countMae}} taps.
 - **Size change (decrement)** vs truth: bias {{decBias}} points, 95 % limits of agreement ± {{decLoa}} points (Bland–Altman); median absolute error {{decMedianErr}}, worst {{decMaxErr}}. By viewpoint A/B/C the bias is {{biasA}} / {{biasB}} / {{biasC}} points, but single-clip errors are wide — so **a single test is never interpreted**: the app shows the number and compares it with the person's own earlier tests taken the same way.
+- **Proportional bias:** error vs true size change has slope {{decPropSlope}}, i.e. severe shrinking tends to be under-read.
 - **Severe decrement** (true ≤ −60 %, held-out 2): median error {{severeDecMedianErr}} points over {{severeClips}} clips. At 3 taps/s with an 80 % shrink, the very smallest late taps were still missed (k03: 25/30, k04: 27/30) — a known limit, listed below.
 - **Slowing** (rate falling across the 10 s): flagged as ≥ 10 % slower in {{slowingDetected}} clips; median speed-change error {{slowingSpeedMedianErr}} points.
 - Shrinking clips (true ≤ −15 %) read at ≤ −15 %: **{{shrinkingDetected}}** · steady clips (|true| < 5 %) read above −15 %: **{{steadyNotFlagged}}**.
@@ -44,7 +45,7 @@ We have no patient videos (that needs ethics approval), so we built a benchmark 
 - **Absolute tap size depends on viewpoint** — median error per view A/B/C: {{ampA}} % / {{ampB}} % / {{ampC}} %. That is why the app shows size *change* and asks users to compare tests taken the same way.
 - Every clip, including the misses: [`docs/bench-table.md`](docs/bench-table.md).
 
-Limits: very small, fast late taps (≥ 3 taps/s with ≥ 80 % shrink) can be missed; one degraded small-tap clip (k20) read −2 % instead of −41 %. A synthetic hand has no skin texture, real tremor or real lighting; no person has been measured yet. In video-file mode the first 10 s are analysed at 30 frames per second; the browser cannot reliably report a file's original frame rate, so low-frame-rate files are not refused automatically. Real-world accuracy (and test–retest reliability) needs a study with people — planned, not done.
+Limits: size change is hidden below 24 fps; speed and size interact (fast early taps are slightly smoothed, which can hide up to ~10 points of shrinking); very small, fast late taps (≥ 3 taps/s with ≥ 80 % shrink) can be missed; one degraded small-tap clip (k20) read −2 % instead of −41 %. A synthetic hand has no skin texture, real tremor or real lighting; no person has been measured yet. In video-file mode the first 10 s are analysed at 30 frames per second; the browser cannot reliably report a file's original frame rate, so low-frame-rate files are not refused automatically. Real-world accuracy (and test–retest reliability) needs a study with people — planned, not done.
 
 ## Privacy
 - `index.html` sets `Content-Security-Policy: connect-src 'self'` — the page can only talk to its own site. Model and WebAssembly engine are bundled; no account; the diary lives in this browser's localStorage (export / import / delete in one click).
@@ -62,8 +63,7 @@ Limits: very small, fast late taps (≥ 3 taps/s with ≥ 80 % shrink) can be mi
 
 ## Finished vs. planned
 - **Finished**: webcam test with auto-start, video-file analysis, quality gate, motor diary with export/import, clinic sheet, {{clips}}-clip benchmark incl. held-out and negative sets, {{tests}} unit tests, mobile layout (390 px).
-- **Planned**: measuring real people (healthy volunteers first, test–retest), then a study with people with Parkinson's and their neurologists; both-hand asymmetry; an offline cache for the 19 MB tracker.
-- **Hand check**: the tracker's left/right label is compared with the chosen hand and a warning offers to fix the label — verified only on our synthetic right hand (3/3 views reported "Right").
+- **Planned**: measuring real people (healthy volunteers first, test–retest), then a study with people with Parkinson's and their neurologists; both-hand asymmetry; an offline cache for the 19 MB tracker; a left/right hand check (the tracker's label is computed, but the warning stays off until it is verified on real hands).
 
 ## Run locally
 ```

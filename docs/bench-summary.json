@@ -22,6 +22,7 @@
   "B": 0,
   "C": -2.3
  },
+ "decPropSlope": -0.12,
  "holdoutClips": 24,
  "holdoutExact": 21,
  "holdoutWithin1": 23,

@@ -17,7 +17,8 @@ export function clipSpecs() {
     id: `d${String(i + 1).padStart(2, '0')}`, f: fs[i % 4], decrement: decs[(i + 1) % 3], view: views[i % 3],
     dist: i % 4 === 3 ? 0.75 : 0.5, pause: i % 6 === 0 ? { at: 5, len: 1.0 } : null, seed: 100 + i, fps: i % 2 ? 15 : 30, degrade: true,
   }))
-  // HOLD-OUT set: written after the algorithm was frozen (2026-10-06 15:0x) and run once. New seeds, perturbed
+  // HOLD-OUT set 1: added 2026-10-06 ~14:56 (commit 3720c69) and first run on that code (21/24 exact); re-run on later
+  // algorithm versions too — see docs/bench-table.md. In-distribution: same generator, mesh, renderer and base views. New seeds, perturbed
   // viewpoints, the SPEC's full 1–5 taps/s range, and 4 clips with a 5 Hz finger tremor on top of the taps.
   const jitterView = (v, k) => ({ rx: v.rx + 0.25 * Math.sin(k * 1.7), ry: v.ry + 0.25 * Math.cos(k * 2.3), rz: v.rz + 0.2 * Math.sin(k * 0.9) })
   const hf = [1.0, 1.5, 2.5, 3.5, 4.5, 5.0]
@@ -35,7 +36,7 @@ export function clipSpecs() {
     { id: 'n05', f: 3, decrement: 0.2, view: views[1], dist: 2.4, seed: 904, fps: 30 },
     { id: 'n06', f: 2, decrement: 0, view: views[2], dist: 2.4, seed: 905, fps: 30 },
   ].map((c) => ({ pause: null, degrade: false, tremor: 0, dropRate: 0, ...c, expectReject: true }))
-  // HOLD-OUT 2 (pre-registered in its own commit before running, 2026-10-06 15:3x, after the rhythm-aware glitch fix):
+  // HOLD-OUT 2 (pre-registered in its own commit 63a4d16, pushed before the first run — see the GitHub Actions run of that commit):
   // the hard clinical cases round-2 reviewers asked for — severe decrement 70–90 %, slowing taps, < 1 tap/s, small taps from the start.
   const k = [
     ...[0.7, 0.8, 0.9].flatMap((dec, i) => [0, 1].map((j) => ({ f: [2, 3, 1.5][i], decrement: dec, view: views[(i + j) % 3], dist: 0.5, a0: 0.9 }))),

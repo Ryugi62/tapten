@@ -151,3 +151,12 @@ test('hand side: majority of confident tracker labels; null when too few', () =>
   assert.equal(r.side.label, 'left'); assert.ok(r.side.share > 0.85)
   assert.equal(analyzeFrames(framesFromAperture(sine(3))).side, null)
 })
+
+test('a partial first tap (recording started mid-closing) is not counted as a small first tap', () => {
+  // start at phase 0.35 of a 3 Hz cycle: fingers already half closed
+  const fn = (t) => sine(3)(t + 0.25 / 3) // starts a quarter-cycle in: fingers already half closed
+  const { taps, metrics } = analyzeFrames(framesFromAperture(fn))
+  const amps = taps.map((t) => t.amplitude)
+  assert.ok(amps[0] > 0.8 * amps[2], `first ${amps[0]} vs ${amps[2]}`)
+  assert.ok(Math.abs(metrics.decrementPct) < 8, `decrement ${metrics.decrementPct}`)
+})

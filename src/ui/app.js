@@ -1,6 +1,7 @@
 // UI layer: screens and wiring. Domain logic lives in src/domain, use cases in src/application.
 import { analyzeFrames } from '../application/analyze.js'
 import { createDiaryService } from '../application/diaryService.js'
+import { createTestRun } from '../application/testRun.js'
 import { REASON_TEXT } from '../domain/quality.js'
 import { MED_LABEL } from '../domain/diary.js'
 import { sizeText, compareWithOwn } from '../domain/verdict.js'
@@ -28,21 +29,22 @@ const bench = () => (benchPromise ??= fetch('docs/bench-summary.json').then((r) 
 const errorLine = (b) => (b ? `On our synthetic-hand benchmark a single test's size change is typically within ±${Math.round(b.decMedianErr)} points, and 95% of tests are within ±${Math.round(b.decLoa)} points; accuracy on real hands is not yet known.` : 'Accuracy on real hands is not yet known.')
 const pct = (v) => (v === null || v === undefined ? '—' : `${v > 0 ? '+' : ''}${Math.round(v)}%`)
 const fixed = (v, d = 1) => (v === null || v === undefined ? '—' : Number(v).toFixed(d))
-const SAFETY = 'Do not change your medication based on these numbers — bring them to your neurologist. If you suddenly get worse, contact your care team.'
+const SAFETY = 'Do not change your medication based on these numbers — bring them to your neurologist. Sudden weakness or numbness on one side, a drooping face or trouble speaking can be a stroke: call emergency services now.'
 const UNKNOWN_NORMS = 'Normal ranges for this home test are not known yet, and it cannot tell whether someone has Parkinson\'s.'
 
 function cta(html) { return `<div class="cta"><div class="inner">${html}</div></div>` }
 function steps(n, of) { return `<div class="steps" aria-label="Step ${n} of ${of}">${Array.from({ length: of }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</div>` }
-function show(html) { cleanup(); session++; app.innerHTML = html; app.focus(); window.scrollTo(0, 0); return session }
+function show(html, keepScroll = false) { cleanup(); session++; const y = window.scrollY; app.innerHTML = html; if (keepScroll) window.scrollTo(0, y); else { app.focus(); window.scrollTo(0, 0) } return session }
 function cleanup() { if (stopCamera) { stopCamera(); stopCamera = null } }
 const hasExample = () => diary.list().some((x) => x.note === 'example')
+const onlyExample = () => { const l = diary.list(); return l.length > 0 && l.every((x) => x.note === 'example') }
 
 const screens = {
   home() {
     const n = diary.list().length
     show(`<section class="stack">
       <div><h1>A 10-second finger-tapping test, measured by your webcam.</h1>
-      <p class="sub">Tap your index finger on your thumb, as fast and as big as you can, for 10 seconds. TapTen counts the taps and shows whether they get <b>smaller</b> or <b>slower</b> along the way — the change neurologists look for in the clinic version of this test (10 taps). A phone screen-tap test cannot see how wide the fingers open. TapTen uses a fixed 10-second window so every test is comparable.</p></div>
+      <div class="howto"><video src="docs/sample-synthetic.webm" autoplay loop muted playsinline aria-label="The tapping movement"></video><p class="note">Tap your index finger on your thumb, fast and as wide as you can, for 10 seconds. TapTen shows whether the taps get <b>smaller</b> or <b>slower</b> — and keeps the record on your device for your next appointment.</p></div></div>
       <div class="links"><button class="link" data-go="sample">▶ Try a sample recording (no webcam needed)</button><button class="link" data-go="file">Analyse a video file</button><button class="link" data-go="diary">My diary (${n} test${n === 1 ? '' : 's'})</button><button class="link" data-go="about">How it works · accuracy</button></div>
       <div class="card"><b>🔒 Your video never leaves this device.</b><p class="small">The hand tracker runs inside this browser tab. Nothing is uploaded, there is no account, and your diary is stored only in this browser on this device — use “Export” to keep a copy.</p></div>
       <div class="card warnbox"><b>A tracking tool, not a diagnosis.</b><p class="small">For people already living with Parkinson's (or their care partners) who want a record to bring to the clinic. It does not give an MDS-UPDRS score and is a research prototype, not a cleared or approved medical device. ${UNKNOWN_NORMS}</p></div>
@@ -52,31 +54,30 @@ const screens = {
   hand() {
     show(`${steps(1, 3)}<h1>Which hand are you testing?</h1><p class="sub">Test one hand at a time. Your doctor usually checks both.</p>
       <div class="choices">${['right', 'left'].map((h) => `<button class="choice" data-hand="${h}" aria-pressed="${state.hand === h}">${h === 'right' ? 'Right hand' : 'Left hand'}</button>`).join('')}</div>
-      <p class="small">Tap your choice — the next step opens by itself.</p>
-      ${cta(`<button class="primary" data-go="med" ${state.hand ? '' : 'disabled'}>Next</button>`)}`)
+      <p class="small">Tap your choice — the next step opens by itself.</p>`)
   },
 
-  med() {
-    const opts = [['on', 'On', 'Medication is working — no dyskinesia, or dyskinesia that does not bother you'], ['on-dyskinesia', 'On, with troublesome dyskinesia', 'Working, but with unwanted, bothersome movements'], ['off', 'Off', 'Medication has worn off, or not taken yet'], ['unsure', 'Not sure', 'That is fine — it still helps']]
-    show(`${steps(2, 3)}<h1>How is your medication right now?</h1><p class="sub">States adapted from the Hauser home motor diary. Tagging tests this way lets you compare them later.</p>
+  med(keepScroll = false) {
+    const opts = [['on', 'On', 'Moving well — no extra movements, or ones that do not bother you'], ['on-dyskinesia', 'On, with troublesome dyskinesia', 'Moving, but with unwanted, bothersome extra movements'], ['off', 'Off', 'Slow, stiff or hard to move'], ['unsure', 'Not sure', 'That is fine — it still helps']]
+    show(`${steps(2, 3)}<h1>How is your movement right now?</h1><p class="sub">Tagging tests this way lets you compare them later.</p>
       <div class="choices">${opts.map(([v, t, s]) => `<button class="choice" data-med="${v}" aria-pressed="${state.medState === v}"><span>${t}<small>${s}</small></span></button>`).join('')}</div>
       <label class="check"><input type="checkbox" id="first" ${state.beforeFirstDose ? 'checked' : ''}> Before my first dose today</label>
-      <p class="sub" style="margin-top:12px">Time since your last dose (optional)</p>
+      <p class="sub" style="margin-top:12px">Time since your last levodopa dose (optional)</p>
       <div class="row" role="group" aria-label="Time since last dose">${[[30, '30 min'], [60, '1 h'], [120, '2 h'], [180, '3 h'], [240, '4 h'], [360, '6 h+']].map(([v, t]) => `<button class="secondary chipbtn" data-mins="${v}" aria-pressed="${state.minutesSinceDose === v}" ${state.beforeFirstDose ? 'disabled' : ''}>${t}</button>`).join('')}</div>
       <p class="row"><label for="mins" class="note">or minutes</label><input id="mins" type="number" min="0" max="1440" inputmode="numeric" value="${state.minutesSinceDose ?? ''}" ${state.beforeFirstDose ? 'disabled' : ''}></p>
-      ${cta(`<button class="primary" data-go="${state.source === 'file' ? 'file' : 'camera'}" ${state.medState ? '' : 'disabled'}>Next</button>`)}`)
+      <p class="note">States adapted from the Hauser home motor diary. “Off” describes how you move, not whether you took a dose — that is the checkbox above.</p>
+      ${cta(`<button class="primary" data-go="${state.source === 'file' ? 'file' : 'camera'}" ${state.medState ? '' : 'disabled'}>Next</button>`)}`, keepScroll)
   },
 
   async camera() {
     state.source = 'camera'; state.sample = false
     const my = show(`${steps(3, 3)}<h1>Show your ${state.hand ?? 'right'} hand inside the box</h1>
-      <div class="howto"><video src="docs/sample-synthetic.webm" autoplay loop muted playsinline aria-label="Example of the tapping movement"></video><p class="note">Tap index finger on thumb — <b>fast and as wide open as you can</b>, for 10 seconds. Sit about an arm's length away, palm turned slightly toward the camera, in good light.</p></div>
+      <div class="howto"><video src="docs/sample-synthetic.webm" autoplay loop muted playsinline aria-label="Example of the tapping movement"></video><p class="note">Tap index finger on thumb — <b>fast and as wide open as you can</b>, for 10 seconds. Stand the laptop or phone up (lean a phone against a cup), sit about an arm's length away, palm turned slightly toward the camera, in good light.</p></div>
       <div class="stage"><video id="v" playsinline muted></video><canvas id="ov"></canvas><div class="guide"></div><div class="chip" id="chip">Starting camera…</div><div class="timer" id="timer"></div></div>
       <label class="check"><input type="checkbox" id="auto" ${state.autoStart ? 'checked' : ''}> Start by itself when my hand is in view and held still for 2 seconds (no button needed)</label>
       <p class="small" id="hint">You will hear a beep at the start and at the end.</p>
       ${cta('<button class="primary" id="go" disabled>Start 10-second test</button>')}`)
     const video = document.getElementById('v'), ov = document.getElementById('ov'), chip = document.getElementById('chip'), go = document.getElementById('go'), timer = document.getElementById('timer')
-    document.getElementById('auto').onchange = (e) => { state.autoStart = e.target.checked }
     let tr, stop
     chip.textContent = 'Loading hand tracker (≈19 MB, first time only)…'
     try {
@@ -92,12 +93,13 @@ const screens = {
     ov.width = video.videoWidth; ov.height = video.videoHeight
     const g = ov.getContext('2d')
     const recent = [], wrist = []
-    let phase = 'aim', t0 = 0, steadySince = 0, frames = [], lastBeep = 0
-    const COUNT = 5
-    const startCount = () => { phase = 'count'; t0 = performance.now(); go.disabled = true; go.textContent = 'Get ready…' }
+    const run = createTestRun({ autoStart: state.autoStart })
+    document.getElementById('auto').onchange = (e) => { state.autoStart = e.target.checked; run.setAuto(e.target.checked) }
+    let frames = [], lastBeep = 0
+    go.onclick = () => { run.start(); go.disabled = true; go.textContent = 'Get ready…' }
     const loop = (_, meta) => {
       if (my !== session || !stopCamera) return
-      // timestamp of the frame itself when the browser provides it (avoids render-delay jitter in tap intervals)
+      // ONE clock: the camera frame's own timestamp when the browser provides it
       const now = meta?.mediaTime !== undefined ? meta.mediaTime * 1000 : performance.now()
       const r = tr.detect(video, now)
       drawHand(g, ov, r.image)
@@ -105,29 +107,27 @@ const screens = {
       if (r.image) { wrist.push([r.image[0].x, r.image[0].y]); if (wrist.length > 30) wrist.shift() } else wrist.length = 0
       const spread = wrist.length >= 15 ? Math.max(...[0, 1].map((k) => { const xs = wrist.map((w) => w[k]); return Math.max(...xs) - Math.min(...xs) })) : 1
       const visible = recent.length >= 20 && recent.reduce((a, b) => a + b, 0) / recent.length >= 0.8
-      const steady = visible && spread < 0.06
-      if (phase === 'aim') {
-        chip.className = 'chip' + (steady ? ' ok' : ''); chip.textContent = steady ? 'Hand found ✓ — hold still' : visible ? 'Hold your hand still' : r.lm ? 'Move your hand closer' : 'Show your hand'
-        go.disabled = !steady
-        steadySince = steady ? steadySince || now : 0
-        if (state.autoStart && steady && now - steadySince > 2000) startCount()
-      } else if (phase === 'count') {
-        const left = COUNT - (now - t0) / 1000
-        const sec = Math.ceil(left)
-        timer.textContent = left > 0 ? sec : ''
-        if (left > 0 && sec !== lastBeep) { lastBeep = sec; beep(sec === 1 ? 660 : 440, 0.08) }
+      const still = spread < 0.06
+      const st = run.step(now, { visible, still })
+      if (st.phase === 'aim') {
+        chip.className = 'chip' + (visible && still ? ' ok' : ''); chip.textContent = visible && still ? 'Hand found ✓ — hold still' : visible ? 'Hold your hand still' : r.lm ? 'Move your hand closer' : 'Show your hand'
+        go.disabled = !visible // the button only needs the hand in view; stillness is only for auto-start
+      } else if (st.phase === 'count') {
+        go.disabled = true; go.textContent = 'Get ready…'
+        const sec = Math.ceil(st.left)
+        timer.textContent = sec
+        if (sec !== lastBeep) { lastBeep = sec; beep(sec === 1 ? 660 : 440, 0.08) }
         chip.textContent = 'Get ready…'
-        if (left <= 0) { phase = 'rec'; t0 = now; frames = []; go.textContent = 'Recording…'; beep(880, 0.25) }
-      } else if (phase === 'rec') {
-        const t = (now - t0) / 1000
-        frames.push({ t, lm: r.lm, handScale: r.handScale, side: r.side })
-        timer.textContent = Math.max(0, 10 - t).toFixed(0)
+      } else if (st.phase === 'rec') {
+        if (st.recT === 0) { frames = []; beep(880, 0.25); go.textContent = 'Recording…' }
+        frames.push({ t: st.recT, lm: r.lm, handScale: r.handScale, side: r.side })
+        timer.textContent = Math.max(0, st.left ?? 0).toFixed(0)
         chip.className = 'chip ok'; chip.textContent = 'Tap fast and big!'
-        if (t >= 10) { phase = 'done'; beep(880, 0.4); finish(frames); return }
+      } else if (st.phase === 'done') {
+        beep(880, 0.4); finish(frames); return
       }
       if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(loop); else requestAnimationFrame(() => loop())
     }
-    go.onclick = startCount
     loop()
   },
 
@@ -161,19 +161,22 @@ const screens = {
       return
     }
     const other = state.hand === 'left' ? 'right' : 'left'
-    const earlier = state.sample ? [] : diary.list().filter((x) => x.hand === state.hand && x.medState === state.medState)
-    const cmp = compareWithOwn(m.decrementPct, earlier)
+    const earlier = state.sample ? [] : diary.list().filter((x) => x.note !== 'example' && x.hand === state.hand && x.medState === state.medState)
+    const lowFps = q.fps < 24 // size swings are clipped at low frame rates (benchmark: 15-fps clips misread size by up to ±18 points)
+    const cmp = lowFps ? null : compareWithOwn(m.decrementPct, earlier)
     const speed = m.speedChangePct === null ? '—' : m.speedChangePct <= -10 ? `${Math.round(-m.speedChangePct)}% slower` : m.speedChangePct >= 10 ? `${Math.round(m.speedChangePct)}% faster` : 'about the same'
-    const sideWarn = r.side && r.side.label !== state.hand && r.side.share >= 0.6
+    // Hand-side warning is OFF until verified on real hands (MediaPipe's label convention for un-mirrored webcam
+    // frames is only checked on our synthetic right hand); the label is still computed and kept for later.
+    const sideWarn = false
     const my = show(`<section class="stack">
       <div><p class="sub">${state.hand === 'left' ? 'Left' : 'Right'} hand · ${esc(MED_LABEL[state.medState] ?? 'Not sure')}${state.sample ? ' · <span class="badge">SAMPLE — synthetic hand</span>' : ''}</p>
-      <div class="big">${m.taps}<small>taps in 10 s</small></div><p class="verdict">${esc(sizeText(m.decrementPct))}</p>
-      <p class="small" ${state.sample ? 'hidden' : ''}>${cmp ? `Your usual for this hand and state (median of ${cmp.n} tests): ${pct(cmp.median)} — this test is ${Math.abs(Math.round(cmp.diff))} points ${cmp.diff < 0 ? 'more shrinking' : 'less shrinking'}.` : 'After 3 tests with the same hand and medication state, TapTen compares new tests with your own usual.'}</p></div>
+      <div class="big">${m.taps}<small>taps in 10 s</small></div><p class="verdict">${lowFps ? 'Tap count and speed are shown; size is not reliable at this camera speed.' : esc(sizeText(m.decrementPct))}</p>
+      <p class="small" ${state.sample ? 'hidden' : ''}>${cmp ? `Compared with your ${cmp.n} earlier tests (same hand and state): <b>${cmp.where}</b> (your usual: ${pct(cmp.lo)} to ${pct(cmp.hi)}).` : 'After 3 tests with the same hand and state, TapTen compares new tests with your own usual range.'}</p></div>
       ${sideWarn ? `<div class="card warnbox"><b>This looks like your ${r.side.label} hand.</b><p class="small">You chose your ${state.hand} hand. If you tapped with the ${r.side.label} hand, switch the label before saving.</p><button class="secondary" id="swap">Label it as ${r.side.label} hand</button></div>` : ''}
       <div id="truth"></div>
       <div class="grid2">
         <div class="stat"><b>${fixed(m.rateHz, 1)}</b><span>taps per second</span></div>
-        <div class="stat"><b>${pct(m.decrementPct)}</b><span>size change, first 3 → last 3 taps</span></div>
+        <div class="stat"><b>${lowFps ? '—' : pct(m.decrementPct)}</b><span>size change over 10 s (first 3 → last 3 taps)${!lowFps && m.decrement10Pct !== null ? ` · within the first 10 taps: ${pct(m.decrement10Pct)}` : ''}</span></div>
         <div class="stat"><b style="font-size:22px">${speed}</b><span>speed, first 3 → last 3 gaps</span></div>
         <div class="stat"><b>${m.hesitations}</b><span>pauses (gaps over twice the usual)</span></div>
       </div>
@@ -211,7 +214,7 @@ const screens = {
 
   diary() {
     const s = diary.list()
-    show(`<h1>My diary ${hasExample() ? '<span class="badge">EXAMPLE DATA — fictional</span>' : ''}</h1><p class="sub">${s.length} test${s.length === 1 ? '' : 's'} in this browser. Shapes and colours show the medication state.</p>
+    show(`<h1>My diary ${hasExample() ? '<span class="badge">EXAMPLE DATA — fictional</span>' : ''}</h1><p class="sub">${s.length} test${s.length === 1 ? '' : 's'} in this browser. Shapes and colours show the movement state.${hasExample() ? ' Example data is invented to show the layout — whether real tests separate like this is not yet known.' : ''}</p><p class="note">On a shared computer, export and then delete your data when you are done.</p>
       ${s.length ? `${medLegend()}
       <div class="card"><b>Taps per second</b>${trendSvg(s, 'rateHz', { label: 'Taps per second', fmt: (v) => v.toFixed(1) })}</div>
       <div class="card"><b>Size change, first → last taps (%)</b>${trendSvg(s, 'decrementPct', { label: 'Size change', fmt: (v) => Math.round(v) + '%' })}</div>
@@ -234,9 +237,11 @@ const screens = {
   },
 
   sheet() {
-    const sh = diary.sheet(), s = diary.list()
+    const real = diary.list().filter((x) => x.note !== 'example')
+    const s = real.length ? real : diary.list() // never mix fictional example data into a real record
+    const sh = diary.sheetOf(s)
     let name = ''; try { name = localStorage.getItem('tapten.name') ?? '' } catch { /* blocked */ }
-    show(`<article class="sheet card"><h1 style="margin-top:0">Finger-tapping home record ${hasExample() ? '<span class="badge">EXAMPLE DATA</span>' : ''}</h1>
+    show(`<article class="sheet card"><h1 style="margin-top:0">Finger-tapping home record ${onlyExample() ? '<span class="badge">EXAMPLE DATA</span>' : ''}</h1>
       <p class="row noprint"><label for="nm" class="sub">Name on the sheet (optional, kept in this browser)</label><input id="nm" value="${esc(name)}" style="font-size:16px;padding:8px 10px;border-radius:10px;border:1px solid var(--line)"></p>
       <p><b id="nmv">${esc(name)}</b></p>
       <p class="small">${esc(fmtDay(sh.from))} to ${esc(fmtDay(sh.to))} · ${sh.total} tests · printed ${esc(fmtDay(sh.generatedAt))}</p>
@@ -343,11 +348,11 @@ function route() { const name = location.hash.slice(1) || 'home'; (screens[name]
 
 document.addEventListener('click', (e) => {
   const c = e.target.closest('[data-mins]')
-  if (c) { state.minutesSinceDose = Number(c.dataset.mins); return screens.med() }
+  if (c) { state.minutesSinceDose = Number(c.dataset.mins); return screens.med(true) }
   const t = e.target.closest('[data-go],[data-hand],[data-med]')
   if (!t) return
   if (t.dataset.hand) { state.hand = t.dataset.hand; return go('med') }
-  if (t.dataset.med) { readMedInputs(); state.medState = t.dataset.med; return screens.med() }
+  if (t.dataset.med) { readMedInputs(); state.medState = t.dataset.med; return screens.med(true) }
   if (t.dataset.go === 'file' && location.hash !== '#med') { state.source = 'file'; state.medState = null; return go('hand') }
   if (t.dataset.go === 'camera' || t.dataset.go === 'file') readMedInputs()
   if (t.dataset.go) go(t.dataset.go)
@@ -359,7 +364,7 @@ function readMedInputs() {
 }
 document.addEventListener('change', (e) => {
   if (e.target.id === 'mins' || e.target.id === 'first') readMedInputs()
-  if (e.target.id === 'first') { if (state.beforeFirstDose) state.minutesSinceDose = null; screens.med() }
+  if (e.target.id === 'first') { if (state.beforeFirstDose) state.minutesSinceDose = null; screens.med(true) }
 })
 window.addEventListener('hashchange', route)
 route()

@@ -1,17 +1,23 @@
-// Plain-language reading of a size change. One test is NOT interpreted: the synthetic benchmark's 95 % limits are about
-// ±17 points and the error depends on hand angle, so a single number is shown neutrally and compared with the
-// person's own earlier tests taken the same way (same hand and medication state).
+// Plain-language reading of a size change. One test is NOT interpreted: on the synthetic benchmark 95 % of single tests
+// are within about ±19 points (worst ≈ 39), so a single number is shown neutrally and compared with the person's own
+// earlier tests taken the same way (same hand and movement state).
 export function sizeText(decrementPct) {
   if (decrementPct === null || decrementPct === undefined || Number.isNaN(decrementPct)) return 'Not enough taps to measure the size change.'
   const v = Math.round(decrementPct)
-  return `Tap size changed by ${v > 0 ? '+' : ''}${v}% from the first to the last taps.`
+  if (v <= -3) return `Your taps got ${-v}% smaller by the end.`
+  if (v >= 3) return `Your taps got ${v}% bigger by the end.`
+  return 'Your taps stayed about the same size.'
 }
 
-/** Compare with earlier tests of the same hand and medication state (needs ≥ 3 earlier tests). */
+const quart = (xs) => { const s = [...xs].sort((a, b) => a - b), q = (p) => s[Math.round(p * (s.length - 1))]; return [q(0.25), q(0.5), q(0.75)] }
+
+/** Compare with earlier tests of the same hand and state (needs ≥ 3). Uses the person's own spread (IQR, at least
+ *  ±10 points) as "usual range", so ordinary test-to-test noise is not presented as change. */
 export function compareWithOwn(decrementPct, earlier) {
   const xs = earlier.map((s) => s.metrics.decrementPct).filter((v) => v !== null && v !== undefined)
   if (decrementPct === null || xs.length < 3) return null
-  const s = [...xs].sort((a, b) => a - b), m = s.length >> 1
-  const med = s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
-  return { n: xs.length, median: med, diff: decrementPct - med }
+  const [q1, med, q3] = quart(xs)
+  const lo = Math.min(q1, med - 10), hi = Math.max(q3, med + 10)
+  const where = decrementPct < lo ? 'more shrinking than your usual' : decrementPct > hi ? 'less shrinking than your usual' : 'within your usual range'
+  return { n: xs.length, median: med, lo, hi, where }
 }

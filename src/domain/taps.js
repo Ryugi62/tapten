@@ -68,6 +68,13 @@ export function detectTaps(series, { minAbsSwing = 0.12, relSwing = 0.25, minInt
       if (taps[i].amplitude < 0.35 * m && Math.min(before, after) < 0.6 * g) { taps.splice(i, 1); ignored++ }
     }
   }
+  // A recording that starts while the fingers are already closing yields a partial first "tap" whose opening peak
+  // is simply the first sample. Drop it when it is clearly smaller than the next taps (it would fake a size change).
+  const first = series.find((p) => p.a !== null)
+  if (taps.length >= 4 && first && taps[0].tOpen - first.t < 0.05) {
+    const next = median(taps.slice(1, 4).map((t) => t.amplitude))
+    if (taps[0].amplitude < 0.6 * next) { taps.shift(); ignored++ }
+  }
   taps.ignored = ignored
   for (let i = 0; i < taps.length; i++) taps[i].interval = i === 0 ? null : taps[i].tClose - taps[i - 1].tClose
   return taps

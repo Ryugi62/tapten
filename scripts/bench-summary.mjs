@@ -25,6 +25,8 @@ const ampErrByView = Object.fromEntries(['A', 'B', 'C'].map((v) => [v, r1(100 * 
 const big = withDec.filter((r) => r.gtDec <= -15), flat = withDec.filter((r) => Math.abs(r.gtDec) < 5)
 const severe = of('k').filter((r) => r.gtDec !== null && r.gtDec <= -60 && r.estDec !== null)
 const slowing = pos.filter((r) => r.fEnd !== null && r.estSpeed !== null && r.gtSpeed !== null)
+const slopeOf = (xs, ys) => { const mx = mean(xs), my = mean(ys); let n = 0, d = 0; xs.forEach((x, i) => { n += (x - mx) * (ys[i] - my); d += (x - mx) ** 2 }); return n / d }
+const propSlope = slopeOf(withDec.map((r) => r.gtDec), withDec.map((r) => r.estDec - r.gtDec))
 const biasByView = Object.fromEntries(['A', 'B', 'C'].map((v) => { const d = withDec.filter((r) => r.view === v).map((r) => r.estDec - r.gtDec); return [v, d.length ? r1(mean(d)) : null] }))
 const paused = pos.filter((r) => r.gtHes > 0), notPaused = pos.filter((r) => r.gtHes === 0)
 const neg = rows.filter((r) => r.expectReject)
@@ -38,7 +40,7 @@ const s = {
   holdout2Clips: of('k').length, holdout2Exact: exact(of('k')), holdout2Within1: within1(of('k')),
   severeClips: severe.length, severeDecMedianErr: severe.length ? r1(med(severe.map((r) => Math.abs(r.estDec - r.gtDec)))) : null,
   slowingClips: slowing.length, slowingDetected: `${slowing.filter((r) => r.estSpeed <= -10).length}/${slowing.length}`, slowingSpeedMedianErr: slowing.length ? r1(med(slowing.map((r) => Math.abs(r.estSpeed - r.gtSpeed)))) : null,
-  decBiasByView: biasByView,
+  decBiasByView: biasByView, decPropSlope: Math.round(propSlope * 100) / 100,
   holdoutClips: of('h').length, holdoutExact: exact(of('h')), holdoutWithin1: within1(of('h')),
   tremorClips: of('h').filter((r) => r.tremor).length, tremorExact: exact(of('h').filter((r) => r.tremor)),
   allExact, allExactPct: r1((100 * allExact) / pos.length), s1Target: 90, s1Pass: (100 * allExact) / pos.length >= 90,
