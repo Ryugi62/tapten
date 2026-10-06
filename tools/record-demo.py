@@ -80,11 +80,13 @@ async def main():
             await app('file'); await pg.wait_for_timeout(300)
             c0 = time.time() - t0 + 1.0
             await pg.set_input_files('#f', SHORT); await pg.wait_for_selector('.nobox', timeout=60000); await pg.evaluate(LIFT)
+            await pg.wait_for_timeout(2500)
             cuts.append((c0, time.time() - t0 - 0.3))
             await cap('gate', text['gate']); await hold('gate', 1.0)
             await app('sample'); await pg.wait_for_timeout(1500)
             c0 = time.time() - t0
             await pg.wait_for_selector('.truth', timeout=120000); await pg.evaluate(LIFT); await pg.evaluate("document.querySelector('.truth').scrollIntoView({block:'center'})")
+            await pg.wait_for_timeout(4500)  # the screencast stalls while the tracker replays; let it catch up inside the cut
             cuts.append((c0, time.time() - t0 - 0.3))
             await cap('sample', text['sample']); await hold('sample', 1.5)
             await pg.evaluate("localStorage.clear()"); await app('diary'); await pg.wait_for_timeout(400); await pg.click('#demo'); await pg.wait_for_timeout(600); await pg.evaluate(LIFT)
@@ -98,14 +100,25 @@ async def main():
             await ctx.close(); await b.close()
     finally:
         srv.terminate()
-    json.dump({'starts': starts, 'secs': secs, 'total': total}, open(os.path.join(WORK, 'timeline.json'), 'w'), indent=1)
+    json.dump({'starts': starts, 'secs': secs, 'total': total, 'cuts': cuts}, open(os.path.join(WORK, 'timeline.json'), 'w'), indent=1)
     # 1b) remove dead waiting (analysis progress bars); shift narration starts accordingly
     def shifted(t):
         return t - sum(max(0.0, min(t, b) - a) for a, b in cuts)
     if cuts:
-        sel = '+'.join(f'between(t,{a:.2f},{b:.2f})' for a, b in cuts)
+        # keep-segments via trim+concat (preserves the screencast's variable frame timing; select+setpts would not)
+        keep, prev = [], 0.0
+        for a, b in sorted(cuts):
+            keep.append((prev, a)); prev = b
+        keep.append((prev, None))
+        # the screencast is variable-frame-rate (frames only on change): make it constant-rate first so static
+        # stretches keep their real length, then cut
+        parts = [f'[0:v]fps=25,split={len(keep)}' + ''.join(f'[c{i}]' for i in range(len(keep)))]
+        for i, (a, b) in enumerate(keep):
+            rng = f'start={a:.3f}' + (f':end={b:.3f}' if b is not None else '')
+            parts.append(f'[c{i}]trim={rng},setpts=PTS-STARTPTS[v{i}]')
+        fc = ';'.join(parts) + ';' + ''.join(f'[v{i}]' for i in range(len(keep))) + f'concat=n={len(keep)}:v=1:a=0[vout]'
         trimmed = os.path.join(WORK, 'trimmed.webm')
-        subprocess.run([FF, '-y', '-loglevel', 'error', '-i', raw, '-vf', f"select='not({sel})',setpts=N/FRAME_RATE/TB", '-an', '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '24', '-row-mt', '1', trimmed], check=True)
+        subprocess.run([FF, '-y', '-loglevel', 'error', '-i', raw, '-filter_complex', fc, '-map', '[vout]', '-an', '-c:v', 'libvpx-vp9', '-b:v', '0', '-crf', '24', '-row-mt', '1', trimmed], check=True)
         raw = trimmed
         starts = {k: shifted(v) for k, v in starts.items()}
         total = shifted(total)
